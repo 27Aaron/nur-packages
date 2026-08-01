@@ -17,6 +17,7 @@
   overlays = import ./overlays; # nixpkgs overlays
 
   example-package = pkgs.callPackage ./pkgs/example-package {};
+  sing-box-beta = pkgs.callPackage ./pkgs/by-name/si/sing-box-beta/package.nix {};
   snell-server = pkgs.callPackage ./pkgs/snell-server {};
   # some-qt5-package = pkgs.libsForQt5.callPackage ./pkgs/some-qt5-package { };
   # ...
