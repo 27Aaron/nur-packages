@@ -37,7 +37,7 @@ are declared in `nvfetcher.toml`. The scheduled `Update package sources` workflo
 refreshes `_sources/generated.nix` and opens a pull request when versions or hashes
 change.
 
-Run the same update process locally with:
+Run the same update process on an `x86_64-linux` host with:
 
 ```console
 $ nix run .#update-sources
@@ -45,3 +45,7 @@ $ nix run .#update-sources
 
 Packages containing dependency hashes such as `vendorHash`, `cargoHash`, or
 `npmDepsHash` are discovered automatically and refreshed with nix-update.
+Executable package-specific scripts named `update.*` anywhere under
+`pkgs/by-name` are also run automatically before dependency hashes are refreshed.
+
+The flake exposes packages and apps for `x86_64-linux` only.
