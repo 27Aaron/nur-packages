@@ -36,3 +36,12 @@ External release sources managed by [nvfetcher](https://github.com/berberman/nvf
 are declared in `nvfetcher.toml`. The scheduled `Update package sources` workflow
 refreshes `_sources/generated.nix` and opens a pull request when versions or hashes
 change.
+
+Run the same update process locally with:
+
+```console
+$ nix run .#update-sources
+```
+
+Packages containing dependency hashes such as `vendorHash`, `cargoHash`, or
+`npmDepsHash` are discovered automatically and refreshed with nix-update.
