@@ -1,0 +1,47 @@
+{
+    "geolite2-asn": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "geolite2-asn",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-3c7BRePD6gY4nYhyNY2mU/kIbe3rvX0Ptcdb4nbZRB4=",
+            "type": "url",
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.01/GeoLite2-ASN.mmdb"
+        },
+        "version": "2026.08.01"
+    },
+    "geolite2-city": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "geolite2-city",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-bmaEyrBOu6EMHqn0pEMXXKD/CA4lXoT57wNQUXWCZX4=",
+            "type": "url",
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.01/GeoLite2-City.mmdb"
+        },
+        "version": "2026.08.01"
+    },
+    "geolite2-country": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "geolite2-country",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "name": null,
+            "sha256": "sha256-0Y8TkBT/Md0LAF4WoVWEnA0mtZxl2ceRaKeA2igYk2Q=",
+            "type": "url",
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.01/GeoLite2-Country.mmdb"
+        },
+        "version": "2026.08.01"
+    }
+}
