@@ -9,3 +9,9 @@ src.github = "P3TERX/GeoLite.mmdb"
 [geolite2-country]
 fetch.url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/$ver/GeoLite2-Country.mmdb"
 src.github = "P3TERX/GeoLite.mmdb"
+
+[sing-box-beta]
+fetch.github = "SagerNet/sing-box"
+src.github_tag = "SagerNet/sing-box"
+src.include_regex = "^v[0-9]+\\.[0-9]+\\.[0-9]+-beta\\.[0-9]+$"
+src.prefix = "v"

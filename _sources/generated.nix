@@ -30,4 +30,14 @@
       sha256 = "sha256-0Y8TkBT/Md0LAF4WoVWEnA0mtZxl2ceRaKeA2igYk2Q=";
     };
   };
+  sing-box-beta = {
+    pname = "sing-box-beta";
+    version = "1.14.0-beta.5";
+    src = fetchFromGitHub {
+      owner = "SagerNet";
+      repo = "sing-box";
+      tag = "v1.14.0-beta.5";
+      sha256 = "sha256-9s6C7F5LVGKkr65FIuUM32hkUbXUlC4MGINNSBdWykc=";
+    };
+  };
 }

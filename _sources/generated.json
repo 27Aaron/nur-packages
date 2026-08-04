@@ -43,5 +43,26 @@
             "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.01/GeoLite2-Country.mmdb"
         },
         "version": "2026.08.01"
+    },
+    "sing-box-beta": {
+        "cargoLock": null,
+        "date": null,
+        "extract": null,
+        "name": "sing-box-beta",
+        "passthru": null,
+        "pinned": false,
+        "src": {
+            "deepClone": false,
+            "fetchSubmodules": false,
+            "leaveDotGit": false,
+            "name": null,
+            "owner": "SagerNet",
+            "repo": "sing-box",
+            "rev": "v1.14.0-beta.5",
+            "sha256": "sha256-9s6C7F5LVGKkr65FIuUM32hkUbXUlC4MGINNSBdWykc=",
+            "sparseCheckout": [],
+            "type": "github"
+        },
+        "version": "1.14.0-beta.5"
     }
 }
