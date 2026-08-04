@@ -16,6 +16,7 @@
   # flakeModules = { }; # flake-parts modules
   overlays = import ./overlays; # nixpkgs overlays
 
+  geolite2 = pkgs.callPackage ./pkgs/by-name/ge/geolite2/package.nix {};
   sing-box-beta = pkgs.callPackage ./pkgs/by-name/si/sing-box-beta/package.nix {};
   # some-qt5-package = pkgs.libsForQt5.callPackage ./pkgs/some-qt5-package { };
   # ...
