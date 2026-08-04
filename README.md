@@ -37,7 +37,8 @@ are declared in `nvfetcher.toml`. The scheduled `Update package sources` workflo
 refreshes `_sources/generated.nix` and opens a pull request when versions or hashes
 change.
 
-Run the same update process on an `x86_64-linux` host with:
+Run the same update process on an `x86_64-linux` or Apple Silicon macOS host
+with:
 
 ```console
 $ nix run .#update-sources
@@ -48,4 +49,5 @@ Packages containing dependency hashes such as `vendorHash`, `cargoHash`, or
 Executable package-specific scripts named `update.*` anywhere under
 `pkgs/by-name` are also run automatically before dependency hashes are refreshed.
 
-The flake exposes packages and apps for `x86_64-linux` only.
+The flake exposes package outputs for `x86_64-linux`. Maintenance apps are
+available for both `x86_64-linux` and `aarch64-darwin`.
