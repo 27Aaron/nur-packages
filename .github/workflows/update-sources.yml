@@ -24,11 +24,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           trap 'rm -f secrets.toml' EXIT
+          old_sing_box_version=$(jq -r '."sing-box-beta".version' _sources/generated.json)
           cat > secrets.toml <<EOF
           [keys]
           github = "$GITHUB_TOKEN"
           EOF
           nix run nixpkgs#nvfetcher -- -c nvfetcher.toml
+          if [[ -n "$(tail -c 1 _sources/generated.json)" ]]; then
+            printf '\n' >> _sources/generated.json
+          fi
+          new_sing_box_version=$(jq -r '."sing-box-beta".version' _sources/generated.json)
+          if [[ "$old_sing_box_version" != "$new_sing_box_version" ]]; then
+            nix run nixpkgs#nix-update -- sing-box-beta --flake --version=skip
+          fi
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
