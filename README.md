@@ -26,3 +26,13 @@ Apply the configuration with:
 ```console
 $ sudo nixos-rebuild switch
 ```
+
+## Package maintenance
+
+Packages under `pkgs/by-name/<prefix>/<name>/package.nix` are registered
+automatically. Adding a package does not require editing `default.nix`.
+
+External release sources managed by [nvfetcher](https://github.com/berberman/nvfetcher)
+are declared in `nvfetcher.toml`. The scheduled `Update package sources` workflow
+refreshes `_sources/generated.nix` and opens a pull request when versions or hashes
+change.

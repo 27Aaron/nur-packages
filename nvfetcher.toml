@@ -1,0 +1,11 @@
+[geolite2-asn]
+fetch.url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/$ver/GeoLite2-ASN.mmdb"
+src.github = "P3TERX/GeoLite.mmdb"
+
+[geolite2-city]
+fetch.url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/$ver/GeoLite2-City.mmdb"
+src.github = "P3TERX/GeoLite.mmdb"
+
+[geolite2-country]
+fetch.url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/$ver/GeoLite2-Country.mmdb"
+src.github = "P3TERX/GeoLite.mmdb"
