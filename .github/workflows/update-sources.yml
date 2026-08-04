@@ -3,7 +3,7 @@ name: Update package sources
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 4 * * 1"
+    - cron: "13 20 * * *"
 
 permissions:
   contents: write
@@ -13,11 +13,43 @@ jobs:
   nvfetcher:
     runs-on: ubuntu-latest
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 4096
+          temp-reserve-mb: 1024
+          swap-size-mb: 2048
+          build-mount-path: /nix
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
+          remove-docker-images: true
+
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Prepare Nix directories
+        run: |
+          sudo mkdir -p /nix/build /nix/tmp
+          sudo chown "$(id -u):$(id -g)" /nix/build /nix/tmp
+          echo "TMPDIR=/nix/tmp" >> "$GITHUB_ENV"
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+            build-dir = /nix/build
+            log-lines = 25
+
+      - name: Restore nvfetcher cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.local/share/nvfetcher
+          key: nvfetcher-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            nvfetcher-${{ runner.os }}-
 
       - name: Update sources
         env:

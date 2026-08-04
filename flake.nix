@@ -5,7 +5,7 @@
     self,
     nixpkgs,
   }: let
-    forAllSystems = nixpkgs.lib.genAttrs nixpkgs.lib.systems.flakeExposed;
+    forAllSystems = nixpkgs.lib.genAttrs ["x86_64-linux"];
   in {
     legacyPackages = forAllSystems (system:
       import ./default.nix {
@@ -34,6 +34,15 @@
             if [[ -n "$(tail -c 1 _sources/generated.json)" ]]; then
               printf '\n' >> _sources/generated.json
             fi
+
+            while IFS= read -r update_script; do
+              if [[ ! -x "$update_script" ]]; then
+                echo "Package update script is not executable: $update_script" >&2
+                exit 1
+              fi
+              echo "Running $update_script"
+              "$update_script"
+            done < <(rg --files -g 'update.*' pkgs/by-name)
 
             while IFS= read -r package_file; do
               if rg --quiet '(vendor|cargo|npm|pnpm).*(Hash|Sha256)\s*=' "$package_file"; then
