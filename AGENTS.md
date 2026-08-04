@@ -131,9 +131,14 @@ Also validate the classic NUR selectors when changing package discovery,
 reserved names, overlays, or CI logic:
 
 ```console
-nix-instantiate --eval --strict -A buildOutputs ci.nix
-nix-instantiate --eval --strict -A cacheOutputs ci.nix
+nix-instantiate --eval -A buildOutputs ci.nix
+nix-instantiate --eval -A cacheOutputs ci.nix
 ```
+
+Do not add `--strict` to those two derivation-list commands with the current
+Lix toolchain: it can terminate the evaluator with status 139 while printing
+large derivation values. Use `nix eval` with a small projection when strict JSON
+validation is needed.
 
 On an Apple Silicon host, the normal flake check builds the Darwin checks. The
 all-systems no-build command only evaluates and instantiates the Linux outputs;
