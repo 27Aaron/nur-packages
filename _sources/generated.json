@@ -8,11 +8,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-3c7BRePD6gY4nYhyNY2mU/kIbe3rvX0Ptcdb4nbZRB4=",
+            "sha256": "sha256-3d2M1RM8yA58rz6NHh946yx/dT4raY+kfzJtCgr7v+o=",
             "type": "url",
-            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.01/GeoLite2-ASN.mmdb"
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.04/GeoLite2-ASN.mmdb"
         },
-        "version": "2026.08.01"
+        "version": "2026.08.04"
     },
     "geolite2-city": {
         "cargoLock": null,
@@ -25,9 +25,9 @@
             "name": null,
             "sha256": "sha256-bmaEyrBOu6EMHqn0pEMXXKD/CA4lXoT57wNQUXWCZX4=",
             "type": "url",
-            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.01/GeoLite2-City.mmdb"
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.04/GeoLite2-City.mmdb"
         },
-        "version": "2026.08.01"
+        "version": "2026.08.04"
     },
     "geolite2-country": {
         "cargoLock": null,
@@ -40,9 +40,9 @@
             "name": null,
             "sha256": "sha256-0Y8TkBT/Md0LAF4WoVWEnA0mtZxl2ceRaKeA2igYk2Q=",
             "type": "url",
-            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.01/GeoLite2-Country.mmdb"
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.04/GeoLite2-Country.mmdb"
         },
-        "version": "2026.08.01"
+        "version": "2026.08.04"
     },
     "sing-box-beta": {
         "cargoLock": null,
@@ -52,16 +52,10 @@
         "passthru": null,
         "pinned": false,
         "src": {
-            "deepClone": false,
-            "fetchSubmodules": false,
-            "leaveDotGit": false,
             "name": null,
-            "owner": "SagerNet",
-            "repo": "sing-box",
-            "rev": "v1.14.0-beta.5",
-            "sha256": "sha256-9s6C7F5LVGKkr65FIuUM32hkUbXUlC4MGINNSBdWykc=",
-            "sparseCheckout": [],
-            "type": "github"
+            "sha256": "sha256-Cf2L4A+cD/D8Zk/0FgTHt32H1CUm2emQalKepD7+l3o=",
+            "type": "url",
+            "url": "https://github.com/SagerNet/sing-box/archive/v1.14.0-beta.5.tar.gz"
         },
         "version": "1.14.0-beta.5"
     }
