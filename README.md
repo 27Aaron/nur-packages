@@ -1,76 +1,29 @@
-# Aaron's Nix User Repository
+<div align="center">
+  <img src="https://img.shields.io/badge/NUR%20Packages-5277C3.svg?style=for-the-badge&logo=nixos&logoColor=white" width="150" alt="NUR Packages">
+</div>
 
-**My personal [NUR](https://github.com/nix-community/NUR) repository**, use it at your own risk.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/palette/macchiato.png" width="400" alt="Catppuccin Macchiato palette">
+</p>
 
-## Binary cache
+<h1 align="center">Aaron's NUR Packages</h1>
 
-Prebuilt packages are available from the public binary cache at
-`https://cache.ou.al/nur`.
+<p align="center">
+  <a href="https://github.com/27Aaron/nur-packages/stargazers">
+    <img alt="Stargazers" src="https://img.shields.io/github/stars/27Aaron/nur-packages?style=for-the-badge&logo=starship&color=C9CBFF&logoColor=D9E0EE&labelColor=302D41">
+  </a>
+  <a href="https://github.com/27Aaron/nur-packages/forks">
+    <img alt="Forks" src="https://img.shields.io/github/forks/27Aaron/nur-packages?style=for-the-badge&logo=forgejo&color=F2CDCD&logoColor=D9E0EE&labelColor=302D41">
+  </a>
+  <a href="https://github.com/27Aaron/nur-packages/commits/">
+    <img alt="Commit activity" src="https://img.shields.io/github/commit-activity/y/27Aaron/nur-packages?style=for-the-badge&logo=upptime&color=B5E8E0&logoColor=D9E0EE&labelColor=302D41">
+  </a>
+</p>
 
-Add the cache to your NixOS configuration:
+<p align="center">
+  My personal <a href="https://github.com/nix-community/NUR">NUR</a> repository.
+</p>
 
-```nix
-nix.settings = {
-  extra-substituters = [
-    "https://cache.ou.al/nur"
-  ];
+## Thanks
 
-  extra-trusted-public-keys = [
-    "nur:/d+9TNhlrK0PGhpvyA3tQqqeClJLwUtg0v3wZdtZOKg="
-  ];
-};
-```
-
-Apply the configuration with:
-
-```console
-$ sudo nixos-rebuild switch
-```
-
-## Package maintenance
-
-Packages under `pkgs/by-name/<prefix>/<name>/package.nix` are registered
-automatically. Adding a package does not require editing `default.nix`.
-
-Other repository outputs are discovered from their matching directories:
-
-- `lib/*.nix` files accept `{ lib }` and return attribute sets that are merged
-  into `lib`;
-- `apps/*.nix` files define runnable flake apps for every supported system;
-- `overlays/*.nix` files are exposed by filename, in addition to
-  `overlays.default`;
-- `nixos-modules`, `home-modules`, `darwin-modules`, and `flake-modules`
-  expose each `name.nix` or `name/default.nix` as `name`.
-
-Each directory's `default.nix` is only its discovery entry point and is not
-exported as an attribute. Matching file and directory symlinks are supported
-for these discovered outputs. Duplicate discovered names or library attributes,
-reserved package names, and duplicate packages across prefixes fail evaluation
-instead of being overwritten.
-
-External release sources managed by [nvfetcher](https://github.com/berberman/nvfetcher)
-are declared in `nvfetcher.toml`. The scheduled `Update package sources` workflow
-refreshes `_sources/generated.nix` and opens a pull request when versions or hashes
-change.
-
-Run the same update process on an `x86_64-linux` or Apple Silicon macOS host
-with:
-
-```console
-$ nix run .#update-sources
-```
-
-Packages containing dependency hashes such as `vendorHash`, `cargoHash`, or
-`npmDepsHash` are discovered automatically and refreshed with nix-update.
-Executable package-specific scripts named `update.*` anywhere under
-`pkgs/by-name` are also run automatically before dependency hashes are refreshed.
-
-Packages and maintenance apps are available for both `x86_64-linux` and
-`aarch64-darwin`.
-
-Format the repository and run its checks with:
-
-```console
-$ nix fmt
-$ nix flake check
-```
+- [Lantian's NUR](https://github.com/xddxdd/nur-packages)
