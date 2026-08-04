@@ -34,11 +34,9 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Prepare Nix directories
+      - name: Prepare Nix build directory
         run: |
-          sudo mkdir -p /nix/build /nix/tmp
-          sudo chown "$(id -u):$(id -g)" /nix/build /nix/tmp
-          echo "TMPDIR=/nix/tmp" >> "$GITHUB_ENV"
+          sudo install -d -m 1777 /nix/build
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
