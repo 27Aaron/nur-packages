@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/Aaron%27s%20NUR%20Packages-5277C3.svg?style=for-the-badge&logo=nixos&logoColor=white" width="150" alt="Aaron's NUR Packages">
+  <img src="https://img.shields.io/badge/Aaron%27s%20NUR%20Packages-5277C3.svg?style=for-the-badge&logo=nixos&logoColor=white" height="28" alt="Aaron's NUR Packages">
 </div>
 
 <p align="center">
