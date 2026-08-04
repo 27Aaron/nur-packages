@@ -1,0 +1,41 @@
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            extra-substituters = https://cache.ou.al/nur
+            extra-trusted-public-keys = nur:/d+9TNhlrK0PGhpvyA3tQqqeClJLwUtg0v3wZdtZOKg=
+
+      - name: Check formatting
+        run: nix fmt -- --ci
+
+      - name: Check all flake outputs
+        run: nix flake check --no-build --all-systems --no-write-lock-file
+
+      - name: Build native flake checks
+        run: nix flake check --no-write-lock-file
+
+      - name: Check updater syntax
+        run: bash -n scripts/update-sources.sh
