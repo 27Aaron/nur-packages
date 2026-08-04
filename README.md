@@ -32,6 +32,22 @@ $ sudo nixos-rebuild switch
 Packages under `pkgs/by-name/<prefix>/<name>/package.nix` are registered
 automatically. Adding a package does not require editing `default.nix`.
 
+Other repository outputs are discovered from their matching directories:
+
+- `lib/*.nix` files accept `{ lib }` and return attribute sets that are merged
+  into `lib`;
+- `apps/*.nix` files define runnable flake apps for every supported system;
+- `overlays/*.nix` files are exposed by filename, in addition to
+  `overlays.default`;
+- `nixos-modules`, `home-modules`, `darwin-modules`, and `flake-modules`
+  expose each `name.nix` or `name/default.nix` as `name`.
+
+Each directory's `default.nix` is only its discovery entry point and is not
+exported as an attribute. Matching file and directory symlinks are supported
+for these discovered outputs. Duplicate discovered names or library attributes,
+reserved package names, and duplicate packages across prefixes fail evaluation
+instead of being overwritten.
+
 External release sources managed by [nvfetcher](https://github.com/berberman/nvfetcher)
 are declared in `nvfetcher.toml`. The scheduled `Update package sources` workflow
 refreshes `_sources/generated.nix` and opens a pull request when versions or hashes
@@ -49,5 +65,12 @@ Packages containing dependency hashes such as `vendorHash`, `cargoHash`, or
 Executable package-specific scripts named `update.*` anywhere under
 `pkgs/by-name` are also run automatically before dependency hashes are refreshed.
 
-The flake exposes package outputs for `x86_64-linux`. Maintenance apps are
-available for both `x86_64-linux` and `aarch64-darwin`.
+Packages and maintenance apps are available for both `x86_64-linux` and
+`aarch64-darwin`.
+
+Format the repository and run its checks with:
+
+```console
+$ nix fmt
+$ nix flake check
+```
