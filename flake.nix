@@ -5,14 +5,18 @@
     self,
     nixpkgs,
   }: let
-    forAllSystems = nixpkgs.lib.genAttrs ["x86_64-linux"];
+    forPackageSystems = nixpkgs.lib.genAttrs ["x86_64-linux"];
+    forAppSystems = nixpkgs.lib.genAttrs [
+      "aarch64-darwin"
+      "x86_64-linux"
+    ];
   in {
-    legacyPackages = forAllSystems (system:
+    legacyPackages = forPackageSystems (system:
       import ./default.nix {
         pkgs = import nixpkgs {inherit system;};
       });
-    packages = forAllSystems (system: nixpkgs.lib.filterAttrs (_: v: nixpkgs.lib.isDerivation v) self.legacyPackages.${system});
-    apps = forAllSystems (
+    packages = forPackageSystems (system: nixpkgs.lib.filterAttrs (_: v: nixpkgs.lib.isDerivation v) self.legacyPackages.${system});
+    apps = forAppSystems (
       system: let
         pkgs = import nixpkgs {inherit system;};
         updateSources = pkgs.writeShellApplication {
