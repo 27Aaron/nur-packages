@@ -1,71 +1,42 @@
 {
-  description = "My personal NUR repository";
+  description = "Aaron's personal Nix package repository";
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-  outputs = {
-    self,
-    nixpkgs,
-  }: let
-    forPackageSystems = nixpkgs.lib.genAttrs ["x86_64-linux"];
-    forAppSystems = nixpkgs.lib.genAttrs [
-      "aarch64-darwin"
-      "x86_64-linux"
-    ];
-  in {
-    legacyPackages = forPackageSystems (system:
-      import ./default.nix {
-        pkgs = import nixpkgs {inherit system;};
-      });
-    packages = forPackageSystems (system: nixpkgs.lib.filterAttrs (_: v: nixpkgs.lib.isDerivation v) self.legacyPackages.${system});
-    apps = forAppSystems (
-      system: let
-        pkgs = import nixpkgs {inherit system;};
-        updateSources = pkgs.writeShellApplication {
-          name = "update-sources";
-          runtimeInputs = with pkgs; [
-            coreutils
-            nix-update
-            nvfetcher
-            ripgrep
-          ];
-          text = ''
-            key_args=()
-            if [[ -f secrets.toml ]]; then
-              key_args=(-k secrets.toml)
-            fi
-
-            nvfetcher "''${key_args[@]}" -c nvfetcher.toml
-
-            if [[ -n "$(tail -c 1 _sources/generated.json)" ]]; then
-              printf '\n' >> _sources/generated.json
-            fi
-
-            while IFS= read -r update_script; do
-              if [[ ! -x "$update_script" ]]; then
-                echo "Package update script is not executable: $update_script" >&2
-                exit 1
-              fi
-              echo "Running $update_script"
-              "$update_script"
-            done < <(rg --files -g 'update.*' pkgs/by-name)
-
-            while IFS= read -r package_file; do
-              if rg --quiet '(vendor|cargo|npm|pnpm).*(Hash|Sha256)\s*=' "$package_file"; then
-                package_name=$(basename "$(dirname "$package_file")")
-                nix-update "$package_name" --flake --version=skip
-              fi
-            done < <(rg --files -g package.nix pkgs/by-name)
-          '';
-        };
-      in {
-        update-sources = {
-          type = "app";
-          program = "${updateSources}/bin/update-sources";
-        };
-      }
-    );
-    nixosModules = import ./nixos-modules;
-    # homeModules = import ./home-modules;
-    # darwinModules = import ./darwin-modules;
-    # flakeModules = import ./flake-modules;
-  };
+  outputs =
+    {
+      self,
+      nixpkgs,
+    }:
+    let
+      inherit (nixpkgs) lib;
+      systems = [
+        "aarch64-darwin"
+        "x86_64-linux"
+      ];
+      forAllSystems = lib.genAttrs systems;
+    in
+    {
+      legacyPackages = forAllSystems (
+        system:
+        import ./default.nix {
+          pkgs = import nixpkgs { inherit system; };
+        }
+      );
+      packages = forAllSystems (
+        system: lib.filterAttrs (_: lib.isDerivation) self.legacyPackages.${system}
+      );
+      checks = forAllSystems (system: self.packages.${system});
+      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
+      apps = forAllSystems (
+        system:
+        import ./apps {
+          pkgs = import nixpkgs { inherit system; };
+        }
+      );
+      lib = import ./lib { inherit lib; };
+      overlays = import ./overlays;
+      nixosModules = import ./nixos-modules;
+      homeModules = import ./home-modules;
+      darwinModules = import ./darwin-modules;
+      flakeModules = import ./flake-modules;
+    };
 }
