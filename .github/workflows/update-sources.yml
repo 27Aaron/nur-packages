@@ -67,7 +67,7 @@ jobs:
           nix run .#update-sources
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: automation/update-sources
           delete-branch: true
