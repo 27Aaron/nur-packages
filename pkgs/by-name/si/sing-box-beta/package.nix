@@ -7,6 +7,6 @@ sing-box.overrideAttrs (
     pname = "sing-box-beta";
     inherit (sources.sing-box-beta) version src;
 
-    vendorHash = "sha256-dSiKsVe32Wv5piQTzXYPZFHulnJVP4MmBccRvlxybWw=";
+    vendorHash = "sha256-l5vNu/JhZRLvXyD2sWPS4qVaTSgmzDQadsNwwF4Ucnw=";
   }
 )
