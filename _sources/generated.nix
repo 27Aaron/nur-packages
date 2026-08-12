@@ -32,10 +32,10 @@
   };
   sing-box-beta = {
     pname = "sing-box-beta";
-    version = "1.14.0-beta.13";
+    version = "1.14.0-beta.14";
     src = fetchurl {
-      url = "https://github.com/SagerNet/sing-box/archive/v1.14.0-beta.13.tar.gz";
-      sha256 = "sha256-DLEhuagyaq+G82CmgaH49Lo+0vNHw6FmF6HsHlmLSP8=";
+      url = "https://github.com/SagerNet/sing-box/archive/v1.14.0-beta.14.tar.gz";
+      sha256 = "sha256-jrv7b47IU4fJqAw1cf9KRkZTtYO7KtHqqeuJ3A+BLh8=";
     };
   };
 }
