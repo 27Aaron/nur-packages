@@ -53,10 +53,10 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-DLEhuagyaq+G82CmgaH49Lo+0vNHw6FmF6HsHlmLSP8=",
+            "sha256": "sha256-jrv7b47IU4fJqAw1cf9KRkZTtYO7KtHqqeuJ3A+BLh8=",
             "type": "url",
-            "url": "https://github.com/SagerNet/sing-box/archive/v1.14.0-beta.13.tar.gz"
+            "url": "https://github.com/SagerNet/sing-box/archive/v1.14.0-beta.14.tar.gz"
         },
-        "version": "1.14.0-beta.13"
+        "version": "1.14.0-beta.14"
     }
 }
