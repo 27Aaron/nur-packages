@@ -8,11 +8,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-CKvpSFlyWmOKtmjQzMH6EFFrDZYjuwCY2vZOwifTNic=",
+            "sha256": "sha256-ElGBHM+L9JzdKY+xla1FbU+qG2qfsjucKW008OavS7I=",
             "type": "url",
-            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.13/GeoLite2-ASN.mmdb"
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.16/GeoLite2-ASN.mmdb"
         },
-        "version": "2026.08.13"
+        "version": "2026.08.16"
     },
     "geolite2-city": {
         "cargoLock": null,
@@ -23,11 +23,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-RkglNZhzRtCWngfdDfwDmZxC96tY+5PFBptdvv5bMMY=",
+            "sha256": "sha256-Zz+0M/+j210XWuI134RtMq5ruUZ33npiXOUavKSJHag=",
             "type": "url",
-            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.13/GeoLite2-City.mmdb"
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.16/GeoLite2-City.mmdb"
         },
-        "version": "2026.08.13"
+        "version": "2026.08.16"
     },
     "geolite2-country": {
         "cargoLock": null,
@@ -38,11 +38,11 @@
         "pinned": false,
         "src": {
             "name": null,
-            "sha256": "sha256-tqUl2P/XYotZoceFMmSTeuOiNjLe6+2dquLr/7+HYmU=",
+            "sha256": "sha256-jMALvNlzTfgErMNhlshKvmXC70vrQpTCv00lrDVtuTM=",
             "type": "url",
-            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.13/GeoLite2-Country.mmdb"
+            "url": "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.16/GeoLite2-Country.mmdb"
         },
-        "version": "2026.08.13"
+        "version": "2026.08.16"
     },
     "sing-box-beta": {
         "cargoLock": null,
