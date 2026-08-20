@@ -8,26 +8,26 @@
 {
   geolite2-asn = {
     pname = "geolite2-asn";
-    version = "2026.08.16";
+    version = "2026.08.19";
     src = fetchurl {
-      url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.16/GeoLite2-ASN.mmdb";
-      sha256 = "sha256-ElGBHM+L9JzdKY+xla1FbU+qG2qfsjucKW008OavS7I=";
+      url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.19/GeoLite2-ASN.mmdb";
+      sha256 = "sha256-8ZWDtVm7Lx7g3tdE/4DTn8NcpDQll3qhZQBaBc0FwfE=";
     };
   };
   geolite2-city = {
     pname = "geolite2-city";
-    version = "2026.08.16";
+    version = "2026.08.19";
     src = fetchurl {
-      url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.16/GeoLite2-City.mmdb";
-      sha256 = "sha256-Zz+0M/+j210XWuI134RtMq5ruUZ33npiXOUavKSJHag=";
+      url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.19/GeoLite2-City.mmdb";
+      sha256 = "sha256-g5qQASLprttRzBUGUE44JP1mhbvofLoWmbPRlmkJSrg=";
     };
   };
   geolite2-country = {
     pname = "geolite2-country";
-    version = "2026.08.16";
+    version = "2026.08.19";
     src = fetchurl {
-      url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.16/GeoLite2-Country.mmdb";
-      sha256 = "sha256-jMALvNlzTfgErMNhlshKvmXC70vrQpTCv00lrDVtuTM=";
+      url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.08.19/GeoLite2-Country.mmdb";
+      sha256 = "sha256-JqLDw3kbNjA6HHC6wYMgxOa9QJUChiJKOPJ1bA99DKI=";
     };
   };
   sing-box-beta = {
