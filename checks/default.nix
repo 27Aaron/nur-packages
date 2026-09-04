@@ -33,5 +33,7 @@
         touch "$out"
       '';
 
+  repo-update-readme-app = import ../support/update-readme-package.nix { inherit pkgs; };
+
   repo-update-app = import ../support/update-sources-package.nix { inherit pkgs; };
 }

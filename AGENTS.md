@@ -82,14 +82,19 @@ do not make a mechanical `prev` to `final` replacement.
 Mutable versions and hashes live in a `hashes.json` beside each package. Package
 expressions read that file through an overridable `versionData` argument, which
 lets update programs build a candidate without first changing the working tree.
+The package table in `README.md` is generated between its section markers from
+the discovered package outputs.
 
 - Prefer `nix run .#update-sources` from the repository root over hand-editing
   package hashes.
 - Package-specific update programs must be named `update.*`, live below
   `pkgs/by-name`, and be executable in Git.
-- Ordinary source updates should modify only the package's `hashes.json`.
+- Ordinary source updates should modify only the package's `hashes.json` and the
+  generated package table in `README.md`.
 - Updaters must calculate and fully build candidate data before atomically
   replacing `hashes.json`; failures must leave the tracked file unchanged.
+- `scripts/update-readme.sh --check` must fail when package discovery or metadata
+  no longer matches the generated README table.
 - `UPDATE_PR_TOKEN` should be configured when automated update pull requests
   need to trigger the normal pull-request workflow without manual approval.
 - Short-lived upstream assets must be mirrored permanently or exposed through

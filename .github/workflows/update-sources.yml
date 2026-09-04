@@ -3,7 +3,7 @@ name: Update package sources
 on:
   workflow_dispatch:
   schedule:
-    # Nominally 04:13 Asia/Shanghai; GitHub may delay scheduled runs.
+    # Nominally 04:13 Asia/Singapore; GitHub may delay scheduled runs.
     - cron: "13 20 * * *"
 
 concurrency:
@@ -23,12 +23,12 @@ jobs:
       patch: ${{ steps.serialize.outputs.patch }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
+        uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ github.token }}
           extra_nix_config: |
@@ -61,7 +61,7 @@ jobs:
           fi
 
           while IFS= read -r changed_file; do
-            if [[ ! $changed_file =~ ^pkgs/by-name/[^/]+/[^/]+/hashes\.json$ ]]; then
+            if [[ $changed_file != "README.md" && ! $changed_file =~ ^pkgs/by-name/[^/]+/[^/]+/hashes\.json$ ]]; then
               echo "Updater changed an unexpected path: $changed_file" >&2
               exit 1
             fi
@@ -71,7 +71,13 @@ jobs:
 
       - name: Validate update
         if: steps.detect.outputs.changed == 'true'
-        run: ./scripts/check.sh
+        run: |
+          nix fmt -- --ci
+          nix flake check --no-build --all-systems --no-write-lock-file
+          nix run path:.#update-readme -- --check
+          checks/check-eval-failures.sh
+          find scripts checks pkgs/by-name -type f -name '*.sh' -exec bash -n {} +
+          git diff --check
 
       - name: Serialize validated patch
         id: serialize
@@ -95,7 +101,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -105,16 +111,22 @@ jobs:
         run: printf '%s' "$SOURCE_UPDATE_PATCH" | base64 --decode | git apply
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.UPDATE_PR_TOKEN || github.token }}
+          author: "Aaron's Bot <155336205+3ayonara@users.noreply.github.com>"
+          committer: "Aaron's Bot <155336205+3ayonara@users.noreply.github.com>"
           branch: automation/update-sources
           delete-branch: true
-          commit-message: "build(sources): update package sources"
+          commit-message: |
+            build(sources): update package sources
+
+            Co-authored-by: Aaron <85681241+27Aaron@users.noreply.github.com>
           title: "build(sources): update package sources"
-          body: "Automated package versions and hashes; builds were validated before this pull request was created."
+          body: "Automated package versions, hashes, and package index; updated packages were built before this pull request was created."
           assignees: 27Aaron
           labels: |
             automation
+            documentation
             package
             source-update

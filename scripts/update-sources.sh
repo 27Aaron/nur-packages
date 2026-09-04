@@ -28,3 +28,5 @@ list_files -g 'update.*' pkgs/by-name \
     echo "Running $update_script"
     "$update_script"
   done
+
+scripts/update-readme.sh

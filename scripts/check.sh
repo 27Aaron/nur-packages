@@ -11,6 +11,7 @@ readonly flake_ref="path:${repository_root}"
 
 nix fmt -- --ci
 nix flake check "$flake_ref" --no-build --all-systems --no-write-lock-file
+nix run "$flake_ref#update-readme" -- --check
 nix flake check "$flake_ref" --no-write-lock-file
 
 checks/check-eval-failures.sh
