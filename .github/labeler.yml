@@ -1,0 +1,32 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+
+github_actions:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+nix:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.nix"
+          - "**/*.nix"
+          - "flake.lock"
+
+package:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "pkgs/**"
+
+source-update:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "pkgs/by-name/**/hashes.json"
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "checks/**"
+          - "scripts/check.sh"
