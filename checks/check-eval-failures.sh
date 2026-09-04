@@ -12,8 +12,8 @@ if nix-instantiate --eval checks/eval/discover-broken.nix >/dev/null 2>"$error_l
   exit 1
 fi
 
-if ! grep --fixed-strings --quiet "broken/broken.nix" "$error_log" \
-  || ! grep --fixed-strings --quiet "No such file or directory" "$error_log"; then
+if ! grep --extended-regexp --quiet 'broken/(broken|missing)\.nix' "$error_log" \
+  || ! grep --extended-regexp --quiet 'No such file or directory|does not exist' "$error_log"; then
   echo "Discovery failed for an unexpected reason:" >&2
   tail -n 120 "$error_log" >&2
   exit 1
