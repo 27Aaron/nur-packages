@@ -12,6 +12,7 @@
   pkgs ? import <nixpkgs> { },
 }:
 let
+  inherit (pkgs) lib;
   inherit (builtins)
     attrValues
     concatLists
@@ -23,14 +24,17 @@ let
   repository = builtins.removeAttrs (import ./default.nix { inherit pkgs; }) reservedNames;
 
   isDerivation = package: isAttrs package && package.type or null == "derivation";
-  isBuildable =
+  isAvailable =
+    package: !(package.meta.broken or false) && lib.meta.availableOn pkgs.stdenv.hostPlatform package;
+  isFree =
     package:
     let
       licenseFromMeta = package.meta.license or [ ];
       licenseList = if builtins.isList licenseFromMeta then licenseFromMeta else [ licenseFromMeta ];
     in
-    !(package.meta.broken or false) && builtins.all (license: license.free or true) licenseList;
-  isCacheable = package: !(package.preferLocalBuild or false);
+    licenseList != [ ] && builtins.all (license: isAttrs license && license.free or false) licenseList;
+  isBuildable = package: isAvailable package && isFree package;
+  isCacheable = package: isFree package && !(package.preferLocalBuild or false);
   shouldRecurse = package: isAttrs package && package.recurseForDerivations or false;
 
   concatMap = builtins.concatMap or (f: xs: concatLists (map f xs));
@@ -49,10 +53,12 @@ let
     in
     concatMap flatten (attrValues packages);
   outputsOf = package: map (output: package.${output}) package.outputs;
+  additionalCachePathsOf = package: package.cachePaths or [ ];
 in
 rec {
   buildPkgs = filter isBuildable (flattenPackages repository);
   cachePkgs = filter isCacheable buildPkgs;
   buildOutputs = concatMap outputsOf buildPkgs;
   cacheOutputs = concatMap outputsOf cachePkgs;
+  cachePaths = cacheOutputs ++ concatMap additionalCachePathsOf buildPkgs;
 }
