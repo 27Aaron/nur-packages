@@ -1,12 +1,29 @@
 {
+  fetchFromGitHub,
   sing-box,
-  sources,
+  versionCheckHook,
+  versionData ? builtins.fromJSON (builtins.readFile ./hashes.json),
 }:
 sing-box.overrideAttrs (
-  _finalAttrs: _previousAttrs: {
+  _finalAttrs: previousAttrs: {
     pname = "sing-box-beta";
-    inherit (sources.sing-box-beta) version src;
+    inherit (versionData) version vendorHash;
 
-    vendorHash = "sha256-9Cv3WJG2C3yMk1d8UCLMIhgM5Q9dYAYp7A0F1LdZm/s=";
+    src = fetchFromGitHub {
+      owner = "SagerNet";
+      repo = "sing-box";
+      tag = "v${versionData.version}";
+      inherit (versionData) hash;
+    };
+
+    doInstallCheck = true;
+    nativeInstallCheckInputs = (previousAttrs.nativeInstallCheckInputs or [ ]) ++ [ versionCheckHook ];
+    versionCheckProgramArg = "version";
+
+    passthru = builtins.removeAttrs (previousAttrs.passthru or { }) [ "tests" ];
+
+    meta = (previousAttrs.meta or { }) // {
+      changelog = "https://github.com/SagerNet/sing-box/releases/tag/v${versionData.version}";
+    };
   }
 )

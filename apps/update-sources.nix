@@ -1,17 +1,8 @@
 { pkgs }:
 let
-  updateSources = pkgs.writeShellApplication {
-    name = "update-sources";
-    runtimeInputs = with pkgs; [
-      coreutils
-      nix-update
-      nvfetcher
-      ripgrep
-    ];
-    text = builtins.readFile ../scripts/update-sources.sh;
-  };
+  updateSources = import ../support/update-sources-package.nix { inherit pkgs; };
 in
 {
   type = "app";
-  program = "${updateSources}/bin/update-sources";
+  program = pkgs.lib.getExe updateSources;
 }
