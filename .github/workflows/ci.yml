@@ -35,6 +35,9 @@ jobs:
       - name: Evaluate every supported system
         run: nix flake check --no-build --all-systems --no-write-lock-file
 
+      - name: Check generated package table
+        run: nix run path:.#update-readme -- --check
+
       - name: Test expected evaluation failures
         run: checks/check-eval-failures.sh
 

@@ -12,6 +12,10 @@ check:
 update:
     nix run path:.#update-sources
 
+# Update the generated README package table.
+readme:
+    nix run path:.#update-readme
+
 # Build cacheable paths with the locked nixpkgs and upload them to Attic.
 cache system="":
     NUR_CACHE_SYSTEM="{{ system }}" nix build --impure --no-link --print-out-paths \
