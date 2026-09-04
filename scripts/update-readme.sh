@@ -93,15 +93,41 @@ nix eval --impure --json --expr '
               homepage;
         }
       ) packages;
-    canonical = metadataFor repository.packages.${builtins.head systems};
-    metadataMatches = builtins.all (
-      system: metadataFor repository.packages.${system} == canonical
-    ) systems;
+    mergeMetadata =
+      result: metadata:
+      let
+        mergeNames =
+          merged: names:
+          if names == [ ] then
+            merged
+          else
+            let
+              name = builtins.head names;
+              value = metadata.${name};
+              next =
+                if builtins.hasAttr name merged then
+                  if merged.${name} == value then
+                    merged
+                  else
+                    throw "Package metadata differs between supported systems: ${name}"
+                else
+                  merged // { ${name} = value; };
+            in
+            mergeNames next (builtins.tail names);
+      in
+      mergeNames result (builtins.attrNames metadata);
+    mergeAll =
+      result: metadataSets:
+      if metadataSets == [ ] then
+        result
+      else
+        mergeAll (mergeMetadata result (builtins.head metadataSets)) (builtins.tail metadataSets);
+    canonical = mergeAll { } (
+      builtins.map (system: metadataFor repository.packages.${system}) systems
+    );
   in
   if systems == [ ] then
     throw "The flake exposes no package systems"
-  else if !metadataMatches then
-    throw "Package metadata differs between supported systems"
   else
     canonical
 ' >"$metadata_file"
