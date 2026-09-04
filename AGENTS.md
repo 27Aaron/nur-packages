@@ -76,6 +76,12 @@ do not make a mechanical `prev` to `final` replacement.
 - The `pull_request_target` metadata workflow must never check out or execute
   pull-request-controlled code; its write permissions are only for assignment
   and labels.
+- Pull-request README generation is deliberately split across trust boundaries.
+  The `pull_request` workflow may evaluate pull-request code but stays read-only.
+  The `workflow_run` publisher must never execute pull-request code and may only
+  copy a validated `README.md` artifact into the current same-repository head.
+- The README publisher requires `UPDATE_PR_TOKEN` and must not fall back to
+  `GITHUB_TOKEN`: its commit needs to trigger the normal pull-request workflows.
 
 ## Package Sources and Updates
 

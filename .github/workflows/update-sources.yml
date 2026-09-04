@@ -3,7 +3,7 @@ name: Update package sources
 on:
   workflow_dispatch:
   schedule:
-    # Nominally 04:13 Asia/Singapore; GitHub may delay scheduled runs.
+    # Nominally 04:13 Asia/Shanghai; GitHub may delay scheduled runs.
     - cron: "13 20 * * *"
 
 concurrency:

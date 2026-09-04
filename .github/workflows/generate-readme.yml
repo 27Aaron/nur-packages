@@ -1,0 +1,87 @@
+name: Generate README package index
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    paths:
+      - ".github/workflows/generate-readme.yml"
+      - "README.md"
+      - "default.nix"
+      - "flake.lock"
+      - "flake.nix"
+      - "pkgs/**"
+      - "scripts/update-readme.sh"
+      - "support/**"
+
+concurrency:
+  group: generate-readme-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    name: Generate package table
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Generate and validate README
+        shell: bash
+        run: |
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+
+          nix run path:.#update-readme
+
+          mapfile -d '' untracked_files < <(git ls-files --others --exclude-standard -z)
+          if ((${#untracked_files[@]} != 0)); then
+            echo "README generator created unexpected untracked files:" >&2
+            printf '%s\n' "${untracked_files[@]}" >&2
+            exit 1
+          fi
+
+          mapfile -d '' changed_files < <(git diff --name-only -z)
+          if ((${#changed_files[@]} > 1)); then
+            echo "README generator changed unexpected files:" >&2
+            printf '%s\n' "${changed_files[@]}" >&2
+            exit 1
+          fi
+          if ((${#changed_files[@]} == 1)) && [[ ${changed_files[0]} != "README.md" ]]; then
+            echo "README generator changed unexpected files:" >&2
+            printf '%s\n' "${changed_files[@]}" >&2
+            exit 1
+          fi
+          if [[ ! -f README.md ]] || [[ -L README.md ]]; then
+            echo "README must be a regular file" >&2
+            exit 1
+          fi
+          if (( $(wc -c <README.md) > 1048576 )); then
+            echo "README exceeds the 1048576-byte safety limit" >&2
+            exit 1
+          fi
+
+          git diff --check
+          nix run path:.#update-readme -- --check
+
+      - name: Upload generated README
+        uses: actions/upload-artifact@v7
+        with:
+          name: readme-${{ github.run_id }}-${{ github.run_attempt }}
+          path: README.md
+          if-no-files-found: error
+          retention-days: 1
