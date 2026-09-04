@@ -159,7 +159,7 @@ while IFS= read -r -d '' package_file; do
         else
           {
             name: "[" + ($name | markdown_text) + "](" + $package.homepage + ")",
-            path: "[`" + $path + "`](./" + $path + ")",
+            path: "[`" + ($name | markdown_text) + "`](./" + $path + ")",
             version: ($package.version | markdown_text),
             description: ($package.description | markdown_text)
           }
