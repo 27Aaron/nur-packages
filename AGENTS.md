@@ -36,8 +36,6 @@ Repository contents are discovered rather than registered by hand.
   flake app definition.
 - `overlays/name.nix` or `overlays/name/default.nix` evaluates to an overlay.
   The name `default` is reserved for `overlay.nix`.
-- `nixos-modules`, `home-modules`, `darwin-modules`, and `flake-modules` expose
-  discovered paths without importing them eagerly.
 - A directory's own `default.nix` is its aggregator and is never exported as a
   discovered attribute.
 
@@ -47,14 +45,7 @@ duplicate. Matching file and directory symlinks are supported. The explicit
 `pathExists` and `readFileType` do not reliably identify a dangling file
 symlink. Do not simplify that check without equivalent fixture coverage.
 
-Packages must not use these reserved root names:
-
-- `darwinModules`
-- `flakeModules`
-- `homeModules`
-- `lib`
-- `nixosModules`
-- `overlays`
+Packages must not use the reserved root names `lib` or `overlays`.
 
 `support/reserved-names.nix` must remain exactly synchronized with the special
 outputs assembled in `default.nix`. Cross-prefix package collisions and all
@@ -72,43 +63,45 @@ do not make a mechanical `prev` to `final` replacement.
 
 - `legacyPackages` contains packages plus the special NUR namespaces.
 - `packages` contains only derivations.
-- `checks` intentionally mirrors `packages` so `nix flake check` performs real
-  package build smoke tests.
+- `checks` contains every package plus repository invariant, formatting, shell,
+  and updater checks, so `nix flake check` performs real build smoke tests.
 - `ci.nix` is a separate NUR build/cache selector. It filters broken and
   non-free packages from builds and honors `preferLocalBuild` for caching.
+  `cachePaths` also includes package-provided fixed-output paths that must be
+  retained independently from runtime closures.
   Do not apply the cache policy to local flake checks without a concrete need.
 - `apps`, the formatter, packages, and checks must remain available for every
   supported system.
 
-Lix may warn that `homeModules` is an unknown flake output. This is a non-fatal
-ecosystem convention warning, not a reason to remove the output.
-
 ## Package Sources and Updates
 
-External sources are declared in `nvfetcher.toml` and generated into
-`_sources/generated.nix` and `_sources/generated.json`. Packages receive the
-generated `sources` set through the repository's `callPackage` scope.
+Mutable versions and hashes live in a `hashes.json` beside each package. Package
+expressions read that file through an overridable `versionData` argument, which
+lets update programs build a candidate without first changing the working tree.
 
 - Prefer `nix run .#update-sources` from the repository root over hand-editing
-  generated source files.
-- Never commit `secrets.toml` or credentials. The workflow creates this file
-  temporarily for nvfetcher.
+  package hashes.
 - Package-specific update programs must be named `update.*`, live below
   `pkgs/by-name`, and be executable in Git.
-- Dependency hashes such as `vendorHash`, `cargoHash`, and `npmDepsHash` are
-  refreshed by `nix-update` after source and package-specific updates.
+- Ordinary source updates should modify only the package's `hashes.json`.
+- Updaters must calculate and fully build candidate data before atomically
+  replacing `hashes.json`; failures must leave the tracked file unchanged.
+- `UPDATE_PR_TOKEN` should be configured when automated update pull requests
+  need to trigger the normal pull-request workflow without manual approval.
+- Short-lived upstream assets must be mirrored permanently or exposed through
+  a package `cachePaths` list and retained in the binary cache.
 
 `scripts/update-sources.sh` must remain strict and fail-fast. Preserve all of
 these properties when editing it:
 
 - `errexit`, `nounset`, and `pipefail` are enabled.
 - File enumeration is deterministic and NUL-delimited.
-- Ripgrep exit code `1` means no files or no match; exit codes greater than `1`
-  are errors and must propagate.
-- Failures from `tail`, file enumeration, package update scripts, and
-  `nix-update` must never be hidden by a conditional or process substitution.
+- Ripgrep exit code `1` means no files; exit codes greater than `1` are errors
+  and must propagate.
+- Failures from file enumeration and package update scripts must never be
+  hidden by a conditional or process substitution.
 
-Running the update app mutates generated files and may update dependency hashes.
+Running the update app may update package versions and dependency hashes.
 Do not use it as a casual smoke test in the main working tree; use a temporary
 checkout when an end-to-end update test is required.
 
@@ -122,7 +115,8 @@ nix fmt
 nix fmt -- --ci
 nix flake check --no-build --all-systems --no-write-lock-file
 nix flake check --no-write-lock-file
-bash -n scripts/update-sources.sh
+checks/check-eval-failures.sh
+find scripts checks pkgs/by-name -type f -name '*.sh' -exec bash -n {} +
 git diff --check
 git diff --cached --check
 ```
@@ -133,9 +127,10 @@ reserved names, overlays, or CI logic:
 ```console
 nix-instantiate --eval -A buildOutputs ci.nix
 nix-instantiate --eval -A cacheOutputs ci.nix
+nix-instantiate --eval -A cachePaths ci.nix
 ```
 
-Do not add `--strict` to those two derivation-list commands with the current
+Do not add `--strict` to those derivation-list commands with the current
 Lix toolchain: it can terminate the evaluator with status 139 while printing
 large derivation values. Use `nix eval` with a small projection when strict JSON
 validation is needed.
@@ -154,5 +149,5 @@ successful nested merges and duplicate nested leaves.
 - Update `README.md` when public outputs, supported systems, discovery rules, or
   maintenance commands change.
 - Use focused Conventional Commits matching the existing history.
-- Keep generated source updates in a separate `build(sources): ...` commit.
+- Keep `hashes.json` source updates in a separate `build(sources): ...` commit.
 - Stage, commit, or push only when explicitly requested.
