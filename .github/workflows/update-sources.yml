@@ -3,6 +3,7 @@ name: Update package sources
 on:
   workflow_dispatch:
   schedule:
+    # Nominally 04:13 Asia/Shanghai; GitHub may delay scheduled runs.
     - cron: "13 20 * * *"
 
 concurrency:
@@ -113,3 +114,7 @@ jobs:
           title: "build(sources): update package sources"
           body: "Automated package versions and hashes; builds were validated before this pull request was created."
           assignees: 27Aaron
+          labels: |
+            automation
+            package
+            source-update

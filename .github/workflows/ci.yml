@@ -65,6 +65,8 @@ jobs:
         uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
         with:
           github_access_token: ${{ github.token }}
+          extra_nix_config: |
+            sandbox = true
 
       - name: Verify runner system
         run: test "$(nix eval --impure --raw --expr builtins.currentSystem)" = "${{ matrix.system }}"
