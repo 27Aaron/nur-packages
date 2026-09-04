@@ -1,1 +1,3 @@
-secrets.toml
+/result
+/result-*
+/secrets.toml

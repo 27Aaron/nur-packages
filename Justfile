@@ -1,6 +1,19 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
-# Build cacheable package outputs and upload them to Attic.
-cache:
-    nix-build ci.nix -A cacheOutputs --no-out-link \
+# Format the repository.
+fmt:
+    nix fmt
+
+# Run the complete local validation suite.
+check:
+    ./scripts/check.sh
+
+# Update package versions and hashes.
+update:
+    nix run path:.#update-sources
+
+# Build cacheable paths with the locked nixpkgs and upload them to Attic.
+cache system="":
+    NUR_CACHE_SYSTEM="{{ system }}" nix build --impure --no-link --print-out-paths \
+        --expr 'let requested = builtins.getEnv "NUR_CACHE_SYSTEM"; system = if requested == "" then builtins.currentSystem else requested; repository = builtins.getFlake ("path:" + toString ./.); in (import ./ci.nix { pkgs = repository.inputs.nixpkgs.legacyPackages.${system}; }).cachePaths' \
         | attic push cache:nur-packages --stdin
