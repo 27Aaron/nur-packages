@@ -62,9 +62,10 @@ do not make a mechanical `prev` to `final` replacement.
 ## Flake and CI Semantics
 
 - `legacyPackages` contains packages plus the special NUR namespaces.
-- `packages` contains only derivations.
-- `checks` contains every package plus repository invariant, formatting, shell,
-  and updater checks, so `nix flake check` performs real build smoke tests.
+- `packages` contains only derivations supported on the selected system.
+- `checks` contains every package supported on that system plus repository
+  invariant, formatting, shell, and updater checks, so `nix flake check`
+  performs real build smoke tests.
 - `ci.nix` is a separate NUR build/cache selector. It filters broken and
   non-free packages from builds and honors `preferLocalBuild` for caching.
   `cachePaths` also includes package-provided fixed-output paths that must be
@@ -89,7 +90,8 @@ Mutable versions and hashes live in a `hashes.json` beside each package. Package
 expressions read that file through an overridable `versionData` argument, which
 lets update programs build a candidate without first changing the working tree.
 The package table in `README.md` is generated between its section markers from
-the discovered package outputs.
+the union of discovered package outputs on all supported systems. Metadata for
+a package must match everywhere that package is available.
 
 - Prefer `nix run .#update-sources` from the repository root over hand-editing
   package hashes.
