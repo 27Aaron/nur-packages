@@ -7,15 +7,9 @@ let
   specialOutputs = {
     lib = import ./lib { inherit (pkgs) lib; };
     overlays = import ./overlays;
-    nixosModules = import ./nixos-modules;
-    homeModules = import ./home-modules;
-    darwinModules = import ./darwin-modules;
-    flakeModules = import ./flake-modules;
   };
   specialNames = builtins.attrNames specialOutputs;
-  specialNamesMatch =
-    builtins.length specialNames == builtins.length reservedNames
-    && builtins.all (name: builtins.elem name reservedNames) specialNames;
+  specialNamesMatch = specialNames == builtins.sort builtins.lessThan reservedNames;
   collisions = builtins.filter (name: builtins.hasAttr name packages) reservedNames;
 in
 if !specialNamesMatch then
