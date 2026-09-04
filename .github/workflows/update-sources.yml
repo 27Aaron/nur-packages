@@ -119,11 +119,23 @@ jobs:
           branch: automation/update-sources
           delete-branch: true
           commit-message: |
-            build(sources): update package sources
+            build(sources): refresh package source pins
+
+            Update package versions and hashes after each candidate builds successfully.
+            Regenerate the README package index from the validated metadata.
 
             Co-authored-by: Aaron <85681241+27Aaron@users.noreply.github.com>
-          title: "build(sources): update package sources"
-          body: "Automated package versions, hashes, and package index; updated packages were built before this pull request was created."
+          title: "build(sources): refresh package source pins"
+          body: |
+            ## Summary
+
+            - update package versions and source hashes
+            - regenerate the README package index
+            - build every changed package candidate before publishing
+
+            ## Automation
+
+            Created by the daily source updater.
           assignees: 27Aaron
           labels: |
             automation
