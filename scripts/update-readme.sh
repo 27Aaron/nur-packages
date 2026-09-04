@@ -112,7 +112,7 @@ while IFS= read -r -d '' package_file; do
   package_directory=${package_file%/package.nix}
   package_name=${package_directory##*/}
 
-  jq --exit-status --raw-output \
+  jq --exit-status --compact-output \
     --arg name "$package_name" \
     --arg path "$package_directory" \
     '
@@ -131,10 +131,12 @@ while IFS= read -r -d '' package_file; do
         elif ($package.homepage // "") == "" then
           error("Package homepage is missing: " + $name)
         else
-          "| [" + ($name | markdown_text) + "](" + $package.homepage + ")"
-          + " | [`" + $path + "`](./" + $path + ")"
-          + " | " + ($package.version | markdown_text)
-          + " | " + ($package.description | markdown_text) + " |"
+          {
+            name: "[" + ($name | markdown_text) + "](" + $package.homepage + ")",
+            path: "[`" + $path + "`](./" + $path + ")",
+            version: ($package.version | markdown_text),
+            description: ($package.description | markdown_text)
+          }
         end
     ' "$metadata_file" >>"$rows_file"
 
@@ -144,9 +146,32 @@ done <"$package_files"
 {
   printf '\n<details>\n'
   printf '<summary>Package set: (Uncategorized) (%d packages)</summary>\n\n' "$package_count"
-  printf '| Name | Path | Version | Description |\n'
-  printf '| ---- | ---- | ------- | ----------- |\n'
-  cat "$rows_file"
+  jq --slurp --raw-output '
+    def padded($text; $width):
+      $text + (" " * ($width - ($text | length)));
+
+    def render_row($cells; $widths):
+      "| "
+      + (
+        [
+          range(0; $cells | length) as $index
+          | padded($cells[$index]; $widths[$index])
+        ]
+        | join(" | ")
+      )
+      + " |";
+
+    . as $packages
+    | ["Name", "Path", "Version", "Description"] as $headers
+    | ([$headers] + ($packages | map([.name, .path, .version, .description]))) as $rows
+    | [
+        range(0; $headers | length) as $index
+        | ([$rows[][$index] | length] | max)
+      ] as $widths
+    | render_row($headers; $widths),
+      render_row(($widths | map("-" * .)); $widths),
+      ($packages[] | render_row([.name, .path, .version, .description]; $widths))
+  ' "$rows_file"
   printf '\n</details>\n'
 } >"$section_file"
 

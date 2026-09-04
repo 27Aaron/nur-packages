@@ -36,10 +36,10 @@ Add the binary cache to your NixOS configuration:
 <details>
 <summary>Package set: (Uncategorized) (2 packages)</summary>
 
-| Name                                                  | Path                                                               | Version        | Description                                       |
-| ----------------------------------------------------- | ------------------------------------------------------------------ | -------------- | ------------------------------------------------- |
-| [geolite2](https://github.com/P3TERX/GeoLite.mmdb)    | [`pkgs/by-name/ge/geolite2`](./pkgs/by-name/ge/geolite2)           | 2026.09.01     | MaxMind GeoLite2 ASN, City, and Country databases |
-| [sing-box-beta](https://github.com/SagerNet/sing-box) | [`pkgs/by-name/si/sing-box-beta`](./pkgs/by-name/si/sing-box-beta) | 1.14.0-beta.17 | The universal proxy platform                      |
+| Name                                               | Path                                                               | Version        | Description                                       |
+| -------------------------------------------------- | ------------------------------------------------------------------ | -------------- | ------------------------------------------------- |
+| [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`pkgs/by-name/ge/geolite2`](./pkgs/by-name/ge/geolite2)           | 2026.09.01     | MaxMind GeoLite2 ASN, City, and Country databases |
+| [sing-box-beta](https://sing-box.sagernet.org)     | [`pkgs/by-name/si/sing-box-beta`](./pkgs/by-name/si/sing-box-beta) | 1.14.0-beta.17 | Universal proxy platform                          |
 
 </details>
 <!--END_SECTION:packages-->
