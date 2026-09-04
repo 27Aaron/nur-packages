@@ -72,6 +72,10 @@ do not make a mechanical `prev` to `final` replacement.
   Do not apply the cache policy to local flake checks without a concrete need.
 - `apps`, the formatter, packages, and checks must remain available for every
   supported system.
+- Pull-request labels and workflow-facing metadata are written in English.
+- The `pull_request_target` metadata workflow must never check out or execute
+  pull-request-controlled code; its write permissions are only for assignment
+  and labels.
 
 ## Package Sources and Updates
 

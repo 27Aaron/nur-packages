@@ -4,6 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    assignees:
+      - "27Aaron"
+    labels:
+      - "automation"
+      - "dependencies"
+      - "github_actions"
     groups:
       github-actions:
         patterns:
@@ -12,3 +18,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    assignees:
+      - "27Aaron"
+    labels:
+      - "automation"
+      - "dependencies"
+      - "nix"
