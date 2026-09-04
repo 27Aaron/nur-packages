@@ -1,0 +1,210 @@
+name: Publish README package index
+
+on:
+  workflow_run:
+    workflows:
+      - Generate README package index
+    types:
+      - completed
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Commit generated package table
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0].head.repo.id == github.event.repository.id
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Resolve current pull request head
+        id: pull-request
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pullRequests = context.payload.workflow_run.pull_requests ?? [];
+            if (pullRequests.length !== 1) {
+              core.notice("The workflow run is not associated with exactly one pull request.");
+              core.setOutput("current", "false");
+              return;
+            }
+
+            const number = pullRequests[0].number;
+            const { data: pullRequest } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: number,
+            });
+            const repositoryId = context.payload.repository.id;
+            const headRepositoryId = pullRequest.head.repo?.id;
+
+            if (
+              pullRequest.state !== "open" ||
+              pullRequest.base.repo.id !== repositoryId ||
+              headRepositoryId !== repositoryId ||
+              pullRequest.head.ref === context.payload.repository.default_branch ||
+              pullRequest.head.sha !== context.payload.workflow_run.head_sha
+            ) {
+              core.notice("The pull request head is closed, external, protected, or no longer current.");
+              core.setOutput("current", "false");
+              return;
+            }
+
+            core.setOutput("current", "true");
+            core.setOutput("head_ref", pullRequest.head.ref);
+            core.setOutput("head_sha", pullRequest.head.sha);
+            core.setOutput("number", number);
+
+      - name: Download generated README
+        if: steps.pull-request.outputs.current == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: readme-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
+          path: generated
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
+      - name: Check out current pull request head
+        if: steps.pull-request.outputs.current == 'true'
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ steps.pull-request.outputs.head_sha }}
+          path: pull-request
+
+      - name: Validate generated README
+        if: steps.pull-request.outputs.current == 'true'
+        id: validate
+        shell: bash
+        run: |
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+
+          readonly artifact_directory="$GITHUB_WORKSPACE/generated"
+          readonly checkout_directory="$GITHUB_WORKSPACE/pull-request"
+          readonly generated_readme="$artifact_directory/README.md"
+          readonly current_readme="$checkout_directory/README.md"
+          readonly maximum_size=1048576
+
+          mapfile -d '' artifact_entries < <(
+            find "$artifact_directory" -mindepth 1 -maxdepth 1 -print0
+          )
+          if ((${#artifact_entries[@]} != 1)) ||
+            [[ ${artifact_entries[0]} != "$generated_readme" ]] ||
+            [[ ! -f $generated_readme ]] || [[ -L $generated_readme ]]; then
+            echo "Artifact must contain exactly one regular README.md file" >&2
+            exit 1
+          fi
+
+          for readme in "$current_readme" "$generated_readme"; do
+            if [[ ! -f $readme ]] || [[ -L $readme ]]; then
+              echo "README must be a regular file: $readme" >&2
+              exit 1
+            fi
+            if (( $(wc -c <"$readme") > maximum_size )); then
+              echo "README exceeds the $maximum_size-byte safety limit: $readme" >&2
+              exit 1
+            fi
+          done
+
+          python3 - "$current_readme" "$generated_readme" <<'PYTHON'
+          import pathlib
+          import sys
+
+          start = b"<!--START_SECTION:packages-->"
+          end = b"<!--END_SECTION:packages-->"
+
+          def outside_section(filename: str) -> tuple[bytes, bytes]:
+              data = pathlib.Path(filename).read_bytes()
+              if data.count(start) != 1 or data.count(end) != 1:
+                  raise SystemExit(f"README must contain one package marker pair: {filename}")
+              before, remainder = data.split(start, 1)
+              _section, after = remainder.split(end, 1)
+              return before, after
+
+          if outside_section(sys.argv[1]) != outside_section(sys.argv[2]):
+              raise SystemExit("Generated README changed content outside the package markers")
+          PYTHON
+
+          cp -- "$generated_readme" "$current_readme"
+          mapfile -d '' changed_files < <(git -C "$checkout_directory" diff --name-only -z)
+          if ((${#changed_files[@]} == 0)); then
+            echo "changed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ((${#changed_files[@]} != 1)) || [[ ${changed_files[0]} != "README.md" ]]; then
+            echo "Publishing the package table would change unexpected files" >&2
+            printf '%s\n' "${changed_files[@]}" >&2
+            exit 1
+          fi
+
+          git -C "$checkout_directory" diff --check
+          echo "changed=true" >>"$GITHUB_OUTPUT"
+
+      - name: Require publishing token
+        if: steps.validate.outputs.changed == 'true'
+        env:
+          UPDATE_PR_TOKEN: ${{ secrets.UPDATE_PR_TOKEN }}
+        shell: bash
+        run: |
+          if [[ -z $UPDATE_PR_TOKEN ]]; then
+            echo "UPDATE_PR_TOKEN is required to publish README updates" >&2
+            exit 1
+          fi
+
+      - name: Revalidate pull request head
+        if: steps.validate.outputs.changed == 'true'
+        uses: actions/github-script@v9
+        env:
+          EXPECTED_HEAD_REF: ${{ steps.pull-request.outputs.head_ref }}
+          EXPECTED_HEAD_SHA: ${{ steps.pull-request.outputs.head_sha }}
+          PULL_REQUEST_NUMBER: ${{ steps.pull-request.outputs.number }}
+        with:
+          script: |
+            const number = Number(process.env.PULL_REQUEST_NUMBER);
+            const { data: pullRequest } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: number,
+            });
+            const repositoryId = context.payload.repository.id;
+
+            if (
+              pullRequest.state !== "open" ||
+              pullRequest.base.repo.id !== repositoryId ||
+              pullRequest.head.repo?.id !== repositoryId ||
+              pullRequest.head.ref !== process.env.EXPECTED_HEAD_REF ||
+              pullRequest.head.sha !== process.env.EXPECTED_HEAD_SHA
+            ) {
+              core.setFailed("The pull request head changed while validating the generated README.");
+            }
+
+      - name: Commit generated README
+        if: steps.validate.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.UPDATE_PR_TOKEN }}
+          HEAD_REF: ${{ steps.pull-request.outputs.head_ref }}
+          HEAD_SHA: ${{ steps.pull-request.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+
+          git check-ref-format "refs/heads/$HEAD_REF"
+          gh auth setup-git
+          git -C pull-request config user.name "Aaron's Bot"
+          git -C pull-request config user.email "155336205+3ayonara@users.noreply.github.com"
+          git -C pull-request add README.md
+          git -C pull-request commit \
+            --message "docs(readme): refresh package index" \
+            --message "Regenerate the package table from evaluated flake metadata after package changes." \
+            --message "Co-authored-by: Aaron <85681241+27Aaron@users.noreply.github.com>"
+          git -C pull-request push \
+            --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA" \
+            origin "HEAD:refs/heads/$HEAD_REF"
