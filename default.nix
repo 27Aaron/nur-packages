@@ -2,8 +2,7 @@
   pkgs ? import <nixpkgs> { },
 }:
 let
-  sources = pkgs.callPackage ./_sources/generated.nix { };
-  packages = import ./pkgs { inherit pkgs sources; };
+  packages = import ./pkgs { inherit pkgs; };
   reservedNames = import ./support/reserved-names.nix;
   specialOutputs = {
     lib = import ./lib { inherit (pkgs) lib; };

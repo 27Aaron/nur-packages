@@ -1,10 +1,7 @@
-{
-  pkgs,
-  sources,
-}:
+{ pkgs }:
 let
   inherit (pkgs) lib;
-  callPackage = lib.callPackageWith (pkgs // { inherit sources; });
+  callPackage = lib.callPackageWith pkgs;
   prefixes = lib.filterAttrs (_name: type: type == "directory") (builtins.readDir ./by-name);
 in
 lib.foldl' (
