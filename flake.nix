@@ -47,7 +47,13 @@
         }
       );
       packages = forAllSystems (
-        system: lib.filterAttrs (_: lib.isDerivation) self.legacyPackages.${system}
+        system:
+        let
+          pkgs = pkgsFor.${system};
+        in
+        lib.filterAttrs (
+          _name: package: lib.isDerivation package && lib.meta.availableOn pkgs.stdenv.hostPlatform package
+        ) self.legacyPackages.${system}
       );
       checks = forAllSystems checksFor;
       formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
