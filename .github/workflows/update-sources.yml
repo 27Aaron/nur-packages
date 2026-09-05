@@ -1,4 +1,4 @@
-name: Update package sources
+name: Update flake lock and package sources
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
     - cron: "13 20 * * *"
 
 concurrency:
-  group: update-sources
+  group: update-dependencies
   cancel-in-progress: false
 
 permissions:
@@ -34,7 +34,10 @@ jobs:
           extra_nix_config: |
             log-lines = 25
 
-      - name: Update sources
+      - name: Update flake lock
+        run: nix flake update
+
+      - name: Update package sources
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: nix run path:.#update-sources
@@ -61,7 +64,7 @@ jobs:
           fi
 
           while IFS= read -r changed_file; do
-            if [[ $changed_file != "README.md" && ! $changed_file =~ ^pkgs/by-name/[^/]+/[^/]+/hashes\.json$ ]]; then
+            if [[ $changed_file != "README.md" && $changed_file != "flake.lock" && ! $changed_file =~ ^pkgs/by-name/[^/]+/[^/]+/hashes\.json$ ]]; then
               echo "Updater changed an unexpected path: $changed_file" >&2
               exit 1
             fi
@@ -92,7 +95,7 @@ jobs:
           echo "patch=$(base64 --wrap=0 "$RUNNER_TEMP/source-updates.patch")" >>"$GITHUB_OUTPUT"
 
   publish:
-    name: Publish update pull request
+    name: Publish dependency update pull request
     needs: update
     if: needs.update.outputs.changed == 'true'
     runs-on: ubuntu-24.04
@@ -119,23 +122,24 @@ jobs:
           branch: automation/update-sources
           delete-branch: true
           commit-message: |
-            build(sources): refresh package source pins
+            build(deps): refresh flake lock and package source pins
 
-            Update package versions and hashes after each candidate builds successfully.
+            Update the flake lock and package versions and hashes after each candidate builds successfully.
             Regenerate the README package index from the validated metadata.
 
             Co-authored-by: Aaron <85681241+27Aaron@users.noreply.github.com>
-          title: "build(sources): refresh package source pins"
+          title: "build(deps): refresh flake lock and package source pins"
           body: |
             ## Summary
 
+            - update the flake lock
             - update package versions and source hashes
             - regenerate the README package index
             - build every changed package candidate before publishing
 
             ## Automation
 
-            Created by the daily source updater.
+            Created by the daily dependency updater.
           assignees: 27Aaron
           labels: |
             automation
