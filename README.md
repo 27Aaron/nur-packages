@@ -39,7 +39,7 @@ Add the binary cache to your NixOS configuration:
 | Name                                               | Path                                               | Version        | Description                                               |
 | -------------------------------------------------- | -------------------------------------------------- | -------------- | --------------------------------------------------------- |
 | [bilihud](https://github.com/locez/bilihud)        | [`bilihud`](./pkgs/by-name/bi/bilihud)             | 0.7.1          | Bilibili live-stream danmaku overlay for fullscreen games |
-| [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2)           | 2026.09.01     | MaxMind GeoLite2 ASN, City, and Country databases         |
+| [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2)           | 2026.09.04     | MaxMind GeoLite2 ASN, City, and Country databases         |
 | [kotonoha](https://github.com/locez/kotonoha)      | [`kotonoha`](./pkgs/by-name/ko/kotonoha)           | 0.2.2          | Linux desktop lyrics overlay for MPRIS players            |
 | [sing-box-beta](https://sing-box.sagernet.org)     | [`sing-box-beta`](./pkgs/by-name/si/sing-box-beta) | 1.14.0-beta.17 | Universal proxy platform                                  |
 
