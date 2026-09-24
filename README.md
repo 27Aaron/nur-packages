@@ -42,7 +42,7 @@ Add the binary cache to your NixOS configuration:
 | [geolite2](https://github.com/P3TERX/GeoLite.mmdb)  | [`geolite2`](./pkgs/by-name/ge/geolite2)           | 2026.09.22     | MaxMind GeoLite2 ASN, City, and Country databases          |
 | [kotonoha](https://github.com/locez/kotonoha)       | [`kotonoha`](./pkgs/by-name/ko/kotonoha)           | 0.2.3          | Linux desktop lyrics overlay for MPRIS players             |
 | [sing-box-beta](https://sing-box.sagernet.org)      | [`sing-box-beta`](./pkgs/by-name/si/sing-box-beta) | 1.14.0-beta.17 | Universal proxy platform                                   |
-| [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit)       | 0.1.10         | WeRead account management and reading challenge automation |
+| [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit)       | 0.1.11         | WeRead account management and reading challenge automation |
 
 </details>
 <!--END_SECTION:packages-->
