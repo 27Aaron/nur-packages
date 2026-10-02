@@ -1,8 +1,8 @@
 {
-  "version": "2026.09.28",
+  "version": "2026.10.01",
   "hashes": {
-    "asn": "sha256-zOz3SWU3/D7/qUKY6gPvNsYHmJrF3yZypJlOSp7iN1o=",
-    "city": "sha256-1bIwDOoywjesJ8Z/uWR1jx6zgSz668na9l81g86thSo=",
-    "country": "sha256-pMgW2vKDdVnOKmRwrlnihaxGZuRTUxW0sirbv2bvIpw="
+    "asn": "sha256-4W4tt+1yrcREPhbX4zolEgyli9jQ8ukCtJrGxQw/SBU=",
+    "city": "sha256-4UveJs4eTlrAgXdAZHR74+DRspzbKXIvfVGLWqGg5mY=",
+    "country": "sha256-/1OXhVlvcqwqBwSPCFBrOBNLzztWgYL9ZfRTSBe/kdc="
   }
 }
