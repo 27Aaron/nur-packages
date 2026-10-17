@@ -173,30 +173,14 @@ done <"$package_files"
   printf '\n<details>\n'
   printf '<summary>Package set: (Uncategorized) (%d packages)</summary>\n\n' "$package_count"
   jq --slurp --raw-output '
-    def padded($text; $width):
-      $text + (" " * ($width - ($text | length)));
-
-    def render_row($cells; $widths):
-      "| "
-      + (
-        [
-          range(0; $cells | length) as $index
-          | padded($cells[$index]; $widths[$index])
-        ]
-        | join(" | ")
-      )
-      + " |";
+    def render_row($cells):
+      "| " + ($cells | join(" | ")) + " |";
 
     . as $packages
     | ["Name", "Path", "Version", "Description"] as $headers
-    | ([$headers] + ($packages | map([.name, .path, .version, .description]))) as $rows
-    | [
-        range(0; $headers | length) as $index
-        | ([$rows[][$index] | length] | max)
-      ] as $widths
-    | render_row($headers; $widths),
-      render_row(($widths | map("-" * .)); $widths),
-      ($packages[] | render_row([.name, .path, .version, .description]; $widths))
+    | render_row($headers),
+      render_row($headers | map("---")),
+      ($packages[] | render_row([.name, .path, .version, .description]))
   ' "$rows_file"
   printf '\n</details>\n'
 } >"$section_file"
