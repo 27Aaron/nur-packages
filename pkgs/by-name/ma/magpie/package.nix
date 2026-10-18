@@ -45,7 +45,7 @@ buildGoLatestModule (finalAttrs: {
   '';
 
   meta = {
-    description = "Terminal client for switching any agent's model";
+    description = "Every agent's model. One place.";
     homepage = "https://github.com/yetone/magpie";
     changelog = "https://github.com/yetone/magpie/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.mit;
