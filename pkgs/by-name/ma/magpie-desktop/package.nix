@@ -139,7 +139,7 @@ buildGoLatestModule (finalAttrs: {
   '';
 
   meta = {
-    description = "Menu bar app for switching any agent's model";
+    description = "Every agent's model. One place.";
     homepage = "https://github.com/yetone/magpie";
     changelog = "https://github.com/yetone/magpie/releases/tag/v${finalAttrs.version}";
     license = lib.licenses.mit;
