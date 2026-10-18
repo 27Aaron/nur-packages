@@ -28,18 +28,13 @@ buildGoLatestModule (finalAttrs: {
 
   subPackages = [ "." ];
 
-  # Login autostart records this path. On Linux it is the GTK wrapper, not
-  # .magpie-wrapped, which has no GLib or GDK environment. On Darwin it is a
-  # symlink into magpie.app; EvalSymlinks then finds the bundle, so launchd
-  # can read its Info.plist.
+  # 自啟要記 bin/magpie：Linux 是 GTK 包裝，Darwin 會解析進 magpie.app。
   postPatch = ''
     substituteInPlace internal/autostart/autostart.go \
       --replace-fail 'exe, err := os.Executable()' 'exe, err := "'"$out"'/bin/magpie", error(nil)'
   ''
   + lib.optionalString stdenv.hostPlatform.isLinux ''
-    # Nix ships the desktop entry, including the magpie:// handler. The copy
-    # this writes would name .magpie-wrapped and shadow it. Keep the rest of
-    # the file: it moves WebKit's saved page data onto the program name.
+    # 套件已提供 desktop 檔，不要再寫一份蓋掉它。
     awk '
       /^func registerScheme\(\) error \{$/ {
         print "func registerScheme() error {"
@@ -61,8 +56,7 @@ buildGoLatestModule (finalAttrs: {
 
   env.CGO_ENABLED = "1";
 
-  # Linux links GTK 3 and WebKitGTK 4.1. Darwin uses the system webview, so it
-  # does not take the gtk3 tag. `production` is the upstream desktop build.
+  # Linux 用 GTK 3 與 WebKitGTK 4.1，Darwin 用系統 webview。
   tags = [
     "production"
   ]
@@ -85,8 +79,7 @@ buildGoLatestModule (finalAttrs: {
     webkitgtk_4_1
   ];
 
-  # MAGPIE_BUN skips the Bun magpie would download. That build is linked for a
-  # generic Linux and NixOS will not start it, so plugins fail with exit 127.
+  # NixOS 無法執行 magpie 下載的 Bun，改用 nixpkgs 的。
   preFixup = lib.optionalString stdenv.hostPlatform.isLinux ''
     gappsWrapperArgs+=(
       --prefix PATH : ${lib.makeBinPath [ xdg-utils ]}
@@ -105,6 +98,7 @@ buildGoLatestModule (finalAttrs: {
       install -Dm644 ${./magpie.desktop} \
         "$out/share/applications/magpie.desktop"
     ''
+    # 執行檔放進 magpie.app，bin/magpie 指回去。
     + lib.optionalString stdenv.hostPlatform.isDarwin ''
       app="$out/Applications/magpie.app"
       mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
@@ -116,6 +110,7 @@ buildGoLatestModule (finalAttrs: {
         --replace-fail '@VERSION@' '${finalAttrs.version}'
     '';
 
+  # 上游測試涵蓋圖形介面，這裡只做安裝檢查。
   doCheck = false;
 
   doInstallCheck = true;

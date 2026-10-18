@@ -29,8 +29,7 @@ buildGoLatestModule (finalAttrs: {
     makeBinaryWrapper
   ];
 
-  # The desktop build links a platform webview. This package is the
-  # terminal-only binary from `make cli`.
+  # 終端機版，不連結圖形介面。
   tags = [ "nogui" ];
 
   ldflags = [
@@ -39,13 +38,10 @@ buildGoLatestModule (finalAttrs: {
     "-X main.version=${finalAttrs.version}"
   ];
 
-  # The upstream suite is large and covers the GUI. The install check verifies
-  # the binary that this package actually ships.
+  # 上游測試涵蓋圖形介面，這裡只做安裝檢查。
   doCheck = false;
 
-  # Plugins run on Bun. Magpie otherwise downloads a generic Linux build into
-  # the cache, and NixOS refuses to start that dynamically linked file.
-  # MAGPIE_BUN is the upstream switch for a Bun this system can run.
+  # NixOS 無法執行 magpie 下載的 Bun，改用 nixpkgs 的。
   postInstall = lib.optionalString stdenv.hostPlatform.isLinux ''
     wrapProgram "$out/bin/magpie" \
       --set MAGPIE_BUN ${lib.getExe bun}
