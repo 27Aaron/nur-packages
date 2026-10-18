@@ -1,7 +1,10 @@
 {
   buildGoLatestModule,
+  bun,
   fetchFromGitHub,
   lib,
+  makeBinaryWrapper,
+  stdenv,
   versionData ? builtins.fromJSON (builtins.readFile ./hashes.json),
 }:
 
@@ -22,8 +25,11 @@ buildGoLatestModule (finalAttrs: {
 
   env.CGO_ENABLED = "0";
 
-  # The desktop build links a platform webview. This package is the
-  # terminal-only binary from `make cli`.
+  nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
+    makeBinaryWrapper
+  ];
+
+  # 終端機版，不連結圖形介面。
   tags = [ "nogui" ];
 
   ldflags = [
@@ -32,15 +38,25 @@ buildGoLatestModule (finalAttrs: {
     "-X main.version=${finalAttrs.version}"
   ];
 
-  # The upstream suite is large and covers the GUI. The install check verifies
-  # the binary that this package actually ships.
+  # 上游測試涵蓋圖形介面，這裡只做安裝檢查。
   doCheck = false;
+
+  # NixOS 無法執行 magpie 下載的 Bun，改用 nixpkgs 的。
+  postInstall = lib.optionalString stdenv.hostPlatform.isLinux ''
+    wrapProgram "$out/bin/magpie" \
+      --set MAGPIE_BUN ${lib.getExe bun}
+  '';
 
   doInstallCheck = true;
   installCheckPhase = ''
     runHook preInstallCheck
     export HOME=$(mktemp -d)
     "$out/bin/magpie" --version | grep -F "magpie ${finalAttrs.version}"
+  ''
+  + lib.optionalString stdenv.hostPlatform.isLinux ''
+    grep -q ${lib.getExe bun} "$out/bin/magpie"
+  ''
+  + ''
     runHook postInstallCheck
   '';
 
