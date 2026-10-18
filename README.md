@@ -17,11 +17,12 @@
 <!--START_SECTION:packages-->
 
 <details>
-<summary>Package set: (Uncategorized) (4 packages)</summary>
+<summary>Package set: (Uncategorized) (5 packages)</summary>
 
 | Name | Path | Version | Description |
 | --- | --- | --- | --- |
 | [bilihud](https://github.com/locez/bilihud) | [`bilihud`](./pkgs/by-name/bi/bilihud) | 0.7.1 | Bilibili live-stream danmaku overlay for fullscreen games |
+| [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.1-rc.2 | Electron desktop shell for DeepSeek Harness |
 | [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2) | 2026.10.16 | MaxMind GeoLite2 ASN, City, and Country databases |
 | [kotonoha](https://github.com/locez/kotonoha) | [`kotonoha`](./pkgs/by-name/ko/kotonoha) | 0.2.3 | Linux desktop lyrics overlay for MPRIS players |
 | [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit) | 0.1.11 | WeRead account management and reading challenge automation |

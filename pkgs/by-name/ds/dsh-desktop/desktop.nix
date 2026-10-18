@@ -1,0 +1,644 @@
+# Desktop assembly for dsh-desktop. Wiring lives in package.nix.
+#
+# Layout, relative to the output root:
+#
+#   dsh-desktop                                 the Electron binary
+#   resources/app/                              app.getAppPath()
+#   resources/app/dsh/                          the bundled dsh runtime
+#   resources/app/dsh/desktop-runtime.json      runtime descriptor
+#   resources/runtime/office-skills/            boot-required skill assets
+#   resources/runtime/bin/node                  standalone Node for skill-office
+#   resources/runtime/primary-runtime/          interpreters + Python libraries
+#   resources/runtime/primary-runtime/dependencies/pnpm/
+#                                               pnpm CLI
+#   resources/icon.png                          window/taskbar icon
+#
+# Beyond assembly, the install phase rewrites the bundled main process with
+# four Linux shell behaviours (desktop-shell-patch.mjs):
+#
+#   - the tray icon is created on Linux as well (upstream gates it on win32),
+#     registering over StatusNotifierItem like every Electron tray on Linux and
+#     fed with the PNG application icon, because nativeImage decodes PNG and
+#     JPEG only and upstream ships just a Windows ICO for the tray;
+#   - the one-time background-close notice is shown on Linux as well (upstream
+#     gates it on win32), where closing the window hides it to that tray;
+#   - DSH_DESKTOP_HIDE_MENUBAR (default 1) hides the window menu bar through
+#     setMenuBarVisibility, which keeps the application menu and its
+#     accelerators alive; =0 shows the bar. Upstream exposes no control for
+#     this, hence the environment variable;
+#   - SIGINT/SIGTERM quit through the shell's own teardown and the Host spawns
+#     detached (adapted from Moraxyc/deepseek-harness.nix
+#     desktop-signal-shutdown.patch, commit c9999f4): without it a terminal
+#     signal kills the process mid-run and reaches the Host through the shared
+#     process group. Drop it once upstream handles Linux terminal signals.
+#
+# Only resources/app/lib/main.js is rewritten; the upstream sources and every
+# other artifact stay untouched. Each patch asserts an anchor verified to occur
+# exactly once in the bundle, so an upstream bump that moves the code fails the
+# build instead of shipping a half-patched shell.
+#
+# The same file takes two further Linux patches (desktop-window-glass.mjs), which
+# give the window the glass treatment upstream implements for macOS: the main
+# window is created transparent, and the document the bundle serves from its own
+# serveWebDocument() gets a style sheet that clears the surfaces painting over
+# the compositor's blur, leaving the frame a translucent tint. Both are the Linux
+# counterpart of the darwin branches right below them. A compositor makes the
+# blur itself; the README documents the window rule that enables it.
+#
+# The Linux desktop identity is not patched but reconciled (desktop-identity.mjs):
+# Electron derives the Wayland app id and X11 WM_CLASS from the application
+# manifest rather than from anything this package writes, so the .desktop file,
+# its StartupWMClass and its Icon= are made to agree with the value Electron
+# actually reports, and the build re-derives that value and checks all four. See
+# desktopId below.
+#
+# Desktop notifications run through libnotify, which the bundled Electron
+# dlopens by soname at first use rather than linking: a missing library only
+# logs "Unable to find libnotify; notifications disabled". The wrapper puts
+# libnotify on LD_LIBRARY_PATH and step 6a probes exactly that resolution path
+# from inside the shipped binary, so notifications cannot degrade silently.
+#
+# Six details are load-bearing; each was verified experimentally against the
+# unmodified upstream application.
+#
+#  1. The Electron binary must NOT be named 'electron'. Electron treats an
+#     executable by that name as "the default app" and reports
+#     app.isPackaged === false, which sends main.ts down its development branch.
+#     Verified on identical trees: renamed -> isPackaged true, untouched -> false.
+#
+#  2. The bundled runtime lives at resources/app/dsh, not resources/dsh.
+#     runtimeResources() (apps/desktop/src/main.ts) resolves the packaged path as
+#     join(app.getAppPath(), 'dsh'), and upstream's electron-builder config packs
+#     'dsh' *inside* the asar ({ from: dsh, to: 'dsh' }). This package ships no
+#     asar, so app.getAppPath() is resources/app and the runtime sits beneath it.
+#     With the runtime anywhere else the binary still starts, then dies later on
+#     a missing desktop-runtime.json.
+#
+#  3. desktop-runtime.json is only partly validated at launch, which is why this
+#     package checks it at build time instead. The reader the shipped shell runs
+#     (readDesktopRuntime, inlined into lib/main.js) hard-fails unless both
+#     @deepseek-ai/dsh and @deepseek-ai/dsh-desktop-host appear in sharedPackages
+#     carrying exactly release.version, and unless release.nodeVersion and
+#     release.pnpmVersion are semver strings. It does NOT compare
+#     release.hostProtocolVersion, and it treats the 'files' inventory as
+#     structural only: the byte-level integrity sweep and the protocol-generation
+#     comparison both live in verifyDesktopRuntime, which upstream runs while
+#     packaging and which never runs at launch. So an empty 'files' array is
+#     legal (the store hash is a stronger guarantee), the protocol field is
+#     informational at runtime, and a stale protocol or Node version would be
+#     accepted silently. Both are therefore derived at build time (see 3a in the
+#     install phase) rather than written down in package.nix.
+#
+#  4. Three environment details are load-bearing; the wrapper sets all three.
+#     CHROME_DEVEL_SANDBOX points Chromium at its setuid sandbox helper, exactly
+#     as nixpkgs' own electron wrapper does. Without it the process dies on
+#     SIGILL before printing anything, and the only alternative is --no-sandbox,
+#     which disables the sandbox outright. LD_LIBRARY_PATH must carry libstdc++,
+#     because N-API addons are dlopen()ed out of a per-user cache directory
+#     (node-addon-native-custom-loader copies them out of the store first), so
+#     they do not inherit the Electron binary's RPATH; without it the Host aborts
+#     with "No usable native binding found for
+#     node-addon-require-builtin-linux-x64-gnu". It also carries the substituted
+#     libvips directory, first, which note 5 explains.
+#
+#     PATH additionally carries bubblewrap, because dsh's own platform sandbox
+#     probes for it first on Linux (chain: bwrap, then landlock) and refuses to
+#     run a command unconfined when neither backend is usable. The landlock
+#     launcher's optional platform package is not materialized by the offline
+#     pnpm install, so without bwrap every workspace-write command fails with
+#     SANDBOX_UNAVAILABLE and the desktop app can only ask for escalation.
+#     Electron's chrome-sandbox is unrelated: it confines renderers, not the
+#     commands the model runs.
+#
+#  5. sharp's native addon cannot run the libvips it ships with, so the package
+#     substitutes a dynamically linked one. The addon
+#     (node_modules/.pnpm/@img+sharp-linux-x64@*/.../sharp-linux-x64-<v>.node)
+#     requires a prebuilt libvips-cpp.so.8.18.3 that statically embeds its own
+#     glib: it exports 1791 g_* symbols and has no libglib-2.0.so.0 in its
+#     DT_NEEDED. Electron on Linux links a dynamically linked glib, and the
+#     addon's own seven glib references (g_object_ref, g_object_unref,
+#     g_signal_connect_data, g_malloc, g_free, g_log_set_handler,
+#     g_utf8_validate) resolve out of the global scope, where Electron's
+#     already-loaded copy is found before the libvips the addon's DT_NEEDED
+#     names. So the addon calls Electron's glib on GObjects that the embedded
+#     glib created, and the first raster operation dies with SIGSEGV. That is the
+#     failure the desktop writes to
+#     ~/.config/@deepseek-ai/dsh-desktop/logs/crash-<time>-host.log as "dsh
+#     desktop host stopped", with only sharp's own [SharpElectronLinux] warning
+#     on the captured stderr. Reproduced in isolation: a 4x4
+#     sharp({ create }).png().toBuffer() under ELECTRON_RUN_AS_NODE=1
+#     ./dsh-desktop exits 139, and preloading glib into a plain Node 24.20.0
+#     makes the same pipeline exit 139 there too, while Node 24.20.0 alone exits
+#     0. LD_DEBUG=bindings names the wrong library on the addon's g_object_ref
+#     and g_object_unref bindings; sharp documents the same conflict under
+#     "Electron and Linux" (https://sharp.pixelplumbing.com/install) and tracks
+#     it upstream as electron#46323.
+#
+#     sharpLibvips (package.nix) therefore supplies the one thing the addon is
+#     missing: a dynamically linked libvips reachable under the addon's own
+#     DT_NEEDED name. The addon resolves libvips through DT_RUNPATH (verified
+#     with readelf -d, not DT_RPATH), and LD_LIBRARY_PATH is searched first, so
+#     exporting that directory is enough to make the addon load it instead of the
+#     prebuilt library. The substitute links glib dynamically, and the loader
+#     resolves its libglib-2.0.so.0 to the copy Electron already loaded, which
+#     leaves one glib and one GObject type system in the process. The wrapper
+#     prepends the directory to LD_LIBRARY_PATH. Nothing in the build exercises
+#     that path, so re-check it by hand after an Electron, sharp or vips bump:
+#     under ELECTRON_RUN_AS_NODE=1 any sharp raster operation has to exit 0,
+#     where the prebuilt libvips exits 139.
+#
+#     The addon's DT_NEEDED fixes the name this package must provide and nothing
+#     about the library behind it, so the substitute is the vips the package
+#     already links -- whichever nixpkgs the consumer passes, which is 8.18.6 on
+#     nixos-unstable where the addon asks for 8.18.3. That is safe because
+#     libvips keeps ABI within a stable series and expresses it in its soname.
+#     The ABI name is libvips-cpp.so.42, identical in both builds, and the
+#     upstream patch version is the last field of the versioned file, 42.20.3 for
+#     8.18.3 against 42.20.6 for 8.18.6, i.e. a libtool revision change, which by
+#     definition carries no interface change. Measured on those two builds: the
+#     C++ binding exports the same 564 symbols with identical sizes, the C API the
+#     same 1712, and abidiff reports no change. sharpLibvips still refuses any
+#     other major.minor series, so a vips bump to 8.19 or 9.x fails the build in
+#     a place that names both versions instead of segfaulting the app. The
+#     sibling flake pins vips 8.18.3 from a stable input instead, for an
+#     exact-version match; that is rejected here because this repository
+#     publishes to NUR consumers who bring their own nixpkgs, and the series
+#     guard is what makes that safe.
+#
+#     Two alternatives were tried and rejected. Localizing the prebuilt libvips'
+#     glib symbols removes the interposition but not the crash: the addon's own
+#     references then bind to Electron's glib and it still exits 139. The
+#     WebAssembly build is not installed by the offline pnpm install, sharp only
+#     falls back to it when the native addon fails to load, and it gives up
+#     native text rendering and tiled output.
+#
+#  6. pnpm lives inside the primary-runtime payload, at
+#     resources/runtime/primary-runtime/dependencies/pnpm, not beside it. Three
+#     readers resolve it by absolute path and none searches: runtimeResources()
+#     (apps/desktop/src/main.ts) builds the plugin manager's package manager from
+#     it, runDesktopCli() (apps/desktop-host/src/cli.ts) resolves it under its
+#     supportDir, and workspaceDependencyPaths() reads
+#     `<payload>/dependencies/pnpm/bin/pnpm.mjs` once that payload is installed
+#     under the Harness home. Pnpm is reached only when a plugin is installed,
+#     updated or removed, so a wrong location breaks neither build nor launch,
+#     and desktop-runtime-pnpm.mjs checks it at build time.
+{
+  lib,
+  stdenvNoCC,
+  electron,
+  makeWrapper,
+  makeDesktopItem,
+  copyDesktopItems,
+  nodejs,
+  bubblewrap,
+  python,
+  glib,
+  gtk3,
+  gsettings-desktop-schemas,
+  libnotify,
+  stdenv,
+
+  version,
+  pnpmVersion,
+  pythonVersion,
+  pythonPackages,
+  # Version of the standalone Node that is linked into the primary runtime. It is
+  # recorded in that payload's manifest and validated by parsePrimaryRuntime().
+  nodeRuntimeVersion,
+
+  # Build-time helpers, and the upstream sources they read: the shell-patch
+  # script (four Linux behaviours applied to the bundled main process), the window
+  # glass patch (two more, on the same file), the coverage guard scripts, the
+  # Host manifest whose dependencies must all be linked, and the source file
+  # declaring the lifecycle protocol generation.
+  shellPatchScript,
+  windowGlassScript,
+  coverageScript,
+  descriptorScript,
+  identityScript,
+  inspectorWorkerScript,
+  pnpmEntryScript,
+  hostManifest,
+  protocolSource,
+
+  # apps/desktop, the Electron shell (lib/, renderer/, resources/).
+  appRoot,
+  # Already-assembled resources/app/{dsh,node_modules} trees.
+  dshRuntimeTree,
+  appModulesTree,
+  # libvips staged under the name sharp's prebuilt addon asks for (note 5).
+  sharpLibvips,
+  # pnpm CLI payload and the Office skill assets.
+  pnpmRoot,
+  skillOfficeAssets,
+}:
+
+let
+  # The Linux desktop identity, in one place because four things have to agree
+  # on it (see desktop-identity.mjs): the Wayland app id and X11 WM_CLASS that
+  # Electron derives from the application manifest, the .desktop file name the
+  # shell looks the window up by, and StartupWMClass.
+  #
+  # The first two are not this package's to choose. apps/desktop/package.json
+  # declares "name": "@deepseek-ai/dsh-desktop" and no desktopName, so Electron
+  # runs its own fallback -- lowercase, hyphenate, strip everything that is not
+  # [a-z0-9] (lib/browser/desktop-name.ts) -- and the live window reports
+  # "deepseek-ai-dsh-desktop" on niri. Naming the .desktop file anything else
+  # leaves the window unmatched, which is what a Wayland task bar draws as its
+  # generic icon. Rather than restate the derivation here and hope, the install
+  # phase re-derives it from the shipped manifest and fails on a mismatch.
+  desktopId = "deepseek-ai-dsh-desktop";
+
+  # nixpkgs's Electron ships its payload under libexec/electron.
+  electronDir = "${electron.unwrapped}/libexec/electron";
+
+  # wrapGAppsHook3 only auto-wraps $out/bin and this binary is not there, so the
+  # hook's two variables are spelled out by hand. They are kept as plain values
+  # rather than a list of pre-joined "--prefix ..." strings: makeWrapper needs
+  # each flag as its own argument, and passing a list through
+  # lib.escapeShellArgs would quote a whole flag into a single argument, which it
+  # rejects with "makeWrapper doesn't understand the arg --prefix ...".
+  xdgDataDirs = lib.concatStringsSep ":" [
+    "${gsettings-desktop-schemas}/share"
+    "${gtk3}/share/gsettings-schemas/${gtk3.name}"
+    "${glib}/share"
+  ];
+  gsettingsSchemasPath = "${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}";
+
+  # libstdc++ must be on LD_LIBRARY_PATH (see note 4): the Node-API addon is
+  # dlopen()ed out of a per-user cache directory, so it does not inherit the
+  # Electron binary's RPATH. sharpLibvips comes first so that the addon finds the
+  # substituted libvips before its own DT_RUNPATH does (see note 5).
+  #
+  # libnotify is here for the same dlopen() reason (see the notification note in
+  # the header): the bundled Electron finds its Linux notification backend by
+  # soname at first use and merely logs "Unable to find libnotify; notifications
+  # disabled" when it cannot. nixpkgs' electron-unwrapped RUNPATHs libnotify
+  # today, but the wrapper does not rely on that; the install phase probes the
+  # shipped binary either way.
+  runtimeLibraryPath = lib.concatStringsSep ":" [
+    "${sharpLibvips}/lib"
+    (lib.makeLibraryPath [
+      glib
+      gtk3
+      libnotify
+      stdenv.cc.cc.lib
+    ])
+  ];
+
+  pythonMajorMinor = lib.versions.majorMinor pythonVersion;
+  pythonSitePackages = "${python}/lib/python${pythonMajorMinor}/site-packages";
+
+  # The template descriptorScript fills in. See note 3 for what the reader
+  # checks. release.nodeVersion and release.hostProtocolVersion are omitted on
+  # purpose: both describe the tree this build assembles, so the install phase
+  # reads them out of that tree and passes them to the script.
+  descriptorTemplate = builtins.toFile "desktop-runtime-template.json" (
+    builtins.toJSON {
+      schemaVersion = 1;
+      release = {
+        schemaVersion = 1;
+        inherit version pnpmVersion;
+      };
+      platform = "linux";
+      arch = if stdenvNoCC.hostPlatform.isAarch64 then "arm64" else "x64";
+      sharedPackages = [
+        {
+          name = "@deepseek-ai/dsh";
+          inherit version;
+          path = "node_modules/@deepseek-ai/dsh";
+        }
+        {
+          name = "@deepseek-ai/dsh-desktop-host";
+          inherit version;
+          path = "node_modules/@deepseek-ai/dsh-desktop-host";
+        }
+      ];
+      files = [ ];
+    }
+  );
+
+  # parsePrimaryRuntime() validates this. workspaceDependencyPaths() then derives
+  # the site-packages location from `python`, so that value must be the real one.
+  runtimeManifest = builtins.toJSON {
+    desktopVersion = version;
+    platform = "linux";
+    arch = if stdenvNoCC.hostPlatform.isAarch64 then "arm64" else "x64";
+    python = pythonVersion;
+    node = nodeRuntimeVersion;
+    pnpm = pnpmVersion;
+    inherit pythonPackages;
+  };
+
+  # nodeRuntimeVersion is the Node package's own version, which nixpkgs derives
+  # from the release it packages. parsePrimaryRuntime() trusts this manifest when
+  # the workspace-dependencies tool runs, so the claim is checked against the
+  # binary that is actually linked; a mismatch fails the build, not the tool call.
+  nodeVersionProbe = stdenvNoCC.mkDerivation {
+    pname = "dsh-desktop-node-version";
+    inherit version;
+    dontUnpack = true;
+    dontConfigure = true;
+    dontBuild = true;
+    dontFixup = true;
+    installPhase = ''
+      runHook preInstall
+      reported="$(${nodejs}/bin/node -p 'process.versions.node')"
+      if [ "$reported" != "${nodeRuntimeVersion}" ]; then
+        echo "desktop: runtime.json declares Node ${nodeRuntimeVersion} but ${nodejs}/bin/node reports $reported" >&2
+        exit 1
+      fi
+      printf '%s' "$reported" > "$out"
+      runHook postInstall
+    '';
+  };
+in
+stdenvNoCC.mkDerivation {
+  pname = "dsh-desktop";
+  inherit version;
+
+  dontUnpack = true;
+  dontConfigure = true;
+  dontBuild = true;
+  dontFixup = true;
+
+  nativeBuildInputs = [
+    makeWrapper
+    copyDesktopItems
+  ];
+
+  desktopItems = [
+    (makeDesktopItem {
+      # makeDesktopItem's `name` is the .desktop file name: it must equal the
+      # window's app id or a Wayland task bar cannot match the two and falls
+      # back to its generic icon (see desktopId above). `desktopName` is the
+      # human-readable Name= shown in launchers, which stays the product name.
+      name = desktopId;
+      desktopName = "DeepSeek Harness";
+      comment = "Open-source agent harness developed by DeepSeek AI";
+      exec = "dsh-desktop %u";
+      icon = desktopId;
+      categories = [ "Development" ];
+      # Electron sets WM_CLASS and the Wayland app id from the same value
+      # (native_window_views.cc), so this is the app id rather than the product
+      # name -- the previous "DeepSeek Harness" matched neither, leaving X11
+      # and XWayland windows unassociated as well.
+      startupWMClass = desktopId;
+      mimeTypes = [ "x-scheme-handler/dsh" ];
+    })
+  ];
+
+  installPhase = ''
+    runHook preInstall
+    # 1. The Electron distribution. A real copy, not a symlink: resourcesPath is
+    #    derived from the realpath of the executable, so a symlinked binary would
+    #    resolve back into the store and resources/app would never be found.
+    mkdir -p "$out"
+    cp -a ${electronDir}/. "$out/"
+    chmod -R u+w "$out"
+    mv "$out/electron" "$out/dsh-desktop"        # see note 1
+    chmod +x "$out/dsh-desktop"
+
+    # The bundled Electron reports the Node version this release ships. It is read
+    # here, before the application tree exists, so the probe sees the bare Electron
+    # distribution: with resources/app present the binary would find an application
+    # to run. ELECTRON_RUN_AS_NODE makes it behave as plain Node, which is how
+    # upstream's prepare-runtime.ts reads the same value.
+    if ! node_version="$(ELECTRON_RUN_AS_NODE=1 "$out/dsh-desktop" -p 'process.versions.node' 2>&1)"; then
+      echo "desktop: the bundled Electron failed to report process.versions.node: $node_version" >&2
+      exit 1
+    fi
+    if [ -z "$node_version" ]; then
+      echo "desktop: the bundled Electron reported an empty process.versions.node" >&2
+      exit 1
+    fi
+
+    resources="$out/resources"
+    rm -f "$resources/default_app.asar"
+
+    # 2. The Electron shell at app.getAppPath(), plus its production modules.
+    app="$resources/app"
+    mkdir -p "$app/lib"
+    cp -a ${appRoot}/lib/. "$app/lib/"
+    cp -a ${appRoot}/renderer "$app/renderer"
+    cp -a ${appRoot}/resources "$app/resources"
+    cp ${appRoot}/package.json "$app/package.json"
+    chmod -R u+w "$app"
+    find "$app/lib" -name '*.tsbuildinfo' -delete
+    cp -a ${appModulesTree} "$app/node_modules"
+
+    # 2a. The four Linux shell behaviours (see the header and
+    #     desktop-shell-patch.mjs): the tray on Linux with the PNG icon, the
+    #     one-time background-close notice on Linux, the DSH_DESKTOP_HIDE_MENUBAR
+    #     window menu bar hook (default: hidden), and graceful SIGINT/SIGTERM
+    #     shutdown with the Host in its own process group. They
+    #     rewrite $app/lib/main.js only -- the upstream sources and every other
+    #     artifact are untouched -- and each patch asserts its anchor is still
+    #     present exactly once, so an upstream bump that moves the code fails
+    #     here instead of shipping a half-patched shell. The script also runs
+    #     `node --check` over the rewritten bundle.
+    ${nodejs}/bin/node ${shellPatchScript} "$app/lib/main.js"
+
+    # 2b. The Linux window glass, on the same file and under the same anchor
+    #     discipline: the window becomes transparent and the document it serves
+    #     gets the rule that lets the compositor's blur show through.
+    ${nodejs}/bin/node ${windowGlassScript} "$app/lib/main.js"
+
+    # 3. The bundled dsh runtime, inside the app directory (see note 2), plus the
+    #    descriptor readDesktopRuntime() validates before the Host is started.
+    #    cp -a preserves the store's read-only modes, so the tree is made writable
+    #    before the descriptor is added to it.
+    cp -a ${dshRuntimeTree} "$app/dsh"
+    chmod -R u+w "$app/dsh"
+
+    # 3a. The two release facts that describe this tree are read out of it rather
+    #     than restated in package.nix, so an upstream bump cannot leave them
+    #     stale. The shell type-checks both without comparing either, so a stale
+    #     copy would be accepted silently at launch.
+    #
+    #     nodeVersion: what the bundled Electron reports as process.versions.node.
+    #     ELECTRON_RUN_AS_NODE makes the renamed binary run as plain Node, which is
+    #     how upstream's prepare-runtime.ts obtains it too.
+    #
+    #     hostProtocolVersion: the lifecycle generation upstream compiles into its
+    #     release metadata. Read from apps/desktop/src/host-protocol.ts, which is
+    #     the declaration of record. electron-builder never ships lib/types -- its
+    #     `files` list is lib/main.js, the five preloads, lib/welcome, renderer and
+    #     package.json -- and the shipped main.js inlines readDesktopRuntime without
+    #     comparing this field. The check that used to be here read
+    #     lib/types/host-protocol.js, a file that is copied but never loaded.
+    host_protocol_version="$(sed -n 's/.*DESKTOP_HOST_PROTOCOL_VERSION = \([0-9][0-9]*\).*/\1/p' ${protocolSource} | head -n 1)"
+    if [ -z "$host_protocol_version" ]; then
+      echo "desktop: no DESKTOP_HOST_PROTOCOL_VERSION in ${protocolSource}" >&2
+      exit 1
+    fi
+    # Verify the Node the primary runtime links and declares (see nodeVersionProbe).
+    # The value is unused below beyond this check, but reading it here makes the
+    # probe a build dependency of the output rather than a detached derivation.
+    # `cat`, not `read`: the probe writes no trailing newline, and `read` returns
+    # non-zero at a premature EOF, which under `set -e` would abort silently.
+    node_runtime_version="$(cat ${nodeVersionProbe})"
+    if [ -z "$node_runtime_version" ]; then
+      echo "desktop: the primary-runtime Node version probe produced nothing" >&2
+      exit 1
+    fi
+    cp ${descriptorTemplate} "$app/dsh/desktop-runtime.json"
+    chmod u+w "$app/dsh/desktop-runtime.json"
+    ${nodejs}/bin/node ${descriptorScript} \
+      "$app/dsh/desktop-runtime.json" "$app/dsh/desktop-runtime.json" \
+      "$host_protocol_version" "$node_version"
+
+    # 3b. The descriptor still has to satisfy the reader that actually ships.
+    #     lib/main.js is ESM loaded by Electron, so it cannot be imported here;
+    #     instead the invariants whose failure would surface at launch are checked
+    #     directly: both shared packages must carry release.version at a path that
+    #     exists, and every release field the reader requires must be present.
+    ${nodejs}/bin/node -e '
+      const { readFileSync, existsSync } = require("node:fs");
+      const { join } = require("node:path");
+      // The descriptor sits at the runtime root, and every path it records is
+      // relative to that same root ($app/dsh), not to the application directory.
+      const root = process.argv[1];
+      const d = JSON.parse(readFileSync(join(root, "desktop-runtime.json"), "utf8"));
+      for (const name of ["@deepseek-ai/dsh", "@deepseek-ai/dsh-desktop-host"]) {
+        const e = d.sharedPackages.find(p => p.name === name);
+        if (!e || e.version !== d.release.version) { console.error("desktop: descriptor has no " + name + " at " + d.release.version); process.exit(1); }
+        if (!existsSync(join(root, e.path, "package.json"))) { console.error("desktop: descriptor path " + e.path + " is missing"); process.exit(1); }
+      }
+      for (const f of ["nodeVersion", "pnpmVersion", "hostProtocolVersion"]) {
+        if (d.release[f] === undefined) { console.error("desktop: descriptor lacks release." + f); process.exit(1); }
+      }
+    ' "$app/dsh"
+
+    # 3c. Both explicit module lists in package.nix are checked against upstream
+    #     rather than trusted. A package upstream adds to either manifest and this
+    #     file does not list fails at launch with ERR_MODULE_NOT_FOUND today; here
+    #     it fails the build and names the package.
+    ${nodejs}/bin/node ${coverageScript} app "$app"
+    ${nodejs}/bin/node ${coverageScript} host "$app/dsh" ${hostManifest}
+
+    # 4. Loosely-packed resources read through process.resourcesPath.
+    cp ${appRoot}/resources/icon.png "$resources/icon.png"
+
+    mkdir -p "$resources/runtime/bin"
+    # skill-office refuses to load in a packaged app without a standalone Node.
+    cp ${appRoot}/scripts/node-bin/node "$resources/runtime/bin/node"
+    chmod +x "$resources/runtime/bin/node"
+    cp -a ${skillOfficeAssets} "$resources/runtime/office-skills"
+
+    # primary-runtime: the interpreters and libraries behind the
+    # load_workspace_dependencies tool. validatePayloadEntries() requires the
+    # python file, the node file, the pnpm file and the site-packages directory
+    # to exist.
+    pr="$resources/runtime/primary-runtime"
+    mkdir -p "$pr/dependencies/node/bin" "$pr/dependencies/node/node_modules"
+    mkdir -p "$pr/dependencies/pnpm"
+    mkdir -p "$pr/dependencies/python/bin"
+    mkdir -p "$pr/dependencies/python/lib/python${pythonMajorMinor}"
+    ln -s ${nodejs}/bin/node "$pr/dependencies/node/bin/node"
+    cp -a ${pnpmRoot}/. "$pr/dependencies/pnpm/"
+    ln -s ${python}/bin/python3 "$pr/dependencies/python/bin/python3"
+    cp -a ${pythonSitePackages} \
+      "$pr/dependencies/python/lib/python${pythonMajorMinor}/site-packages"
+    cp ${builtins.toFile "runtime.json" runtimeManifest} "$pr/runtime.json"
+
+    # 5. Desktop-entry icons, under the app id that the desktop entry, the
+    #    window and StartupWMClass all share (see desktopId). Both the raster the
+    #    window and tray use and the vector original upstream ships, so launchers
+    #    that scale get the SVG rather than a 512px upscale.
+    install -Dm644 ${appRoot}/resources/icon.png \
+      "$out/share/icons/hicolor/512x512/apps/${desktopId}.png"
+    install -Dm644 ${appRoot}/resources/icon.svg \
+      "$out/share/icons/hicolor/scalable/apps/${desktopId}.svg"
+
+    # 6. The launcher. See note 4.
+    makeWrapper "$out/dsh-desktop" "$out/bin/dsh-desktop" \
+      --set CHROME_DEVEL_SANDBOX "$out/chrome-sandbox" \
+      --prefix LD_LIBRARY_PATH : "${runtimeLibraryPath}" \
+      --prefix PATH : "${
+        lib.makeBinPath [
+          nodejs
+          bubblewrap
+        ]
+      }" \
+      --prefix XDG_DATA_DIRS : "${xdgDataDirs}" \
+      --prefix GSETTINGS_SCHEMAS_PATH : "${gsettingsSchemasPath}"
+
+    # 6a. Desktop notifications run through libnotify, which the bundled Electron
+    #     dlopens by soname at first use (its binary carries "libnotify.so",
+    #     "libnotify.so.1", "libnotify.so.4", "libnotify.so.5" and the loader
+    #     shell/browser/notifications/linux/libnotify_notification.cc). A missing
+    #     library fails nothing at run time -- the binary just logs "Unable to
+    #     find libnotify; notifications disabled" -- so the ability degrades
+    #     silently unless it is checked. Probe the same resolution path the
+    #     notification backend uses: dlopen() from inside the shipped binary
+    #     (ELECTRON_RUN_AS_NODE turns it into plain Node), under the
+    #     LD_LIBRARY_PATH the wrapper contributes. libnotify is a plain shared
+    #     library, not a Node addon, so a successful dlopen() surfaces as "did
+    #     not self-register"; anything else counts as unresolvable and, per
+    #     Electron's own loader message, would disable notifications.
+    LD_LIBRARY_PATH="${runtimeLibraryPath}" ELECTRON_RUN_AS_NODE=1 "$out/dsh-desktop" -e '
+      const names = ["libnotify.so", "libnotify.so.1", "libnotify.so.4", "libnotify.so.5"];
+      for (const name of names) {
+        try {
+          process.dlopen({ exports: {} }, name);
+          console.log("desktop: libnotify resolved as " + name);
+          process.exit(0);
+        } catch (error) {
+          if (String(error && error.message).includes("self-register")) {
+            console.log("desktop: libnotify resolved as " + name + " (plain shared library, as expected)");
+            process.exit(0);
+          }
+        }
+      }
+      console.error("desktop: the bundled Electron cannot dlopen() libnotify; desktop notifications would be disabled");
+      process.exit(1);
+    '
+
+    # 6b. The experimental Inspector works in its own Worker, and that Worker is
+    #     the one place where this package's `--expose-internals` has to be
+    #     re-supplied: it is spawned with an explicit execArgv (see
+    #     the source build's installPhase patch) and its entry imports the
+    #     profile-resolution bootstrap, which reaches Node's internal module
+    #     loader without a try/catch. Without the flag that call lands on the
+    #     prebuilt `node-addon-require-builtin` binary, whose Electron runtime
+    #     fingerprint this build does not carry, so opening developer mode fails
+    #     with "node-addon-require-builtin unsupported: Unsupported/no-context"
+    #     and the Inspector never activates. Nothing else in the build depends on
+    #     this, so the script reads the spawn site back out of the shipped tree
+    #     and spawns one real Worker with that execArgv under this build's
+    #     Electron (RUN_AS_NODE, as the desktop Host runs) instead of trusting
+    #     either the patch or per-Worker flag handling to keep working.
+    dsh_tree="$(dirname "$(dirname "$(readlink -f "$app/dsh/node_modules/@deepseek-ai/dsh-desktop-host")")")"
+    ELECTRON_RUN_AS_NODE=1 "$out/bin/dsh-desktop" ${inspectorWorkerScript} \
+      "$dsh_tree/packages/experimental/inspector/lib/index.js" \
+      "$dsh_tree/packages/boot/app-boot/lib/worker/profile-resolution-bootstrap.js"
+
+    # 6c. The pnpm entry point the plugin manager is handed (see note 6). It runs
+    #     after step 6 because it exercises the launcher that step creates.
+    ${nodejs}/bin/node ${pnpmEntryScript} "$app" "$resources" "$out/bin/dsh-desktop"
+
+    runHook postInstall
+
+    # 7. The desktop identity, checked against the tree that was just assembled.
+    #    It runs here rather than earlier because the .desktop file itself only
+    #    appears in postInstall (copyDesktopItems). The app id the window will
+    #    report is not written down anywhere in this file to compare against --
+    #    it is *derived* from the shipped application manifest by Electron's own
+    #    fallback -- so the script re-derives it with the same algorithm and
+    #    fails on any disagreement with the file name, StartupWMClass or Icon=
+    #    below. An upstream rename of the private package therefore fails this
+    #    build instead of silently un-matching every window on a Wayland session.
+    ${nodejs}/bin/node ${identityScript} "$app" "$out" ${desktopId} ${desktopId}
+  '';
+
+  meta = {
+    description = "Electron desktop shell for DeepSeek Harness";
+    homepage = "https://github.com/deepseek-ai/deepseek-harness";
+    changelog = "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v${version}";
+    license = lib.licenses.mit;
+    sourceProvenance = [ lib.sourceTypes.binaryBytecode ];
+    platforms = [ "x86_64-linux" ];
+    mainProgram = "dsh-desktop";
+  };
+}
