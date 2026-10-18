@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=magpie
+GenericName=Model switcher
+Comment=Switch any agent's model from one menu bar app
+Exec=magpie
+Icon=magpie
+Terminal=false
+Categories=Utility;
+StartupWMClass=magpie
+MimeType=x-scheme-handler/magpie;
