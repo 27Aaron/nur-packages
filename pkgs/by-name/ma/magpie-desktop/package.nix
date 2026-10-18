@@ -1,5 +1,6 @@
 {
   buildGoLatestModule,
+  bun,
   desktop-file-utils,
   fetchFromGitHub,
   gtk3,
@@ -84,8 +85,13 @@ buildGoLatestModule (finalAttrs: {
     webkitgtk_4_1
   ];
 
+  # MAGPIE_BUN skips the Bun magpie would download. That build is linked for a
+  # generic Linux and NixOS will not start it, so plugins fail with exit 127.
   preFixup = lib.optionalString stdenv.hostPlatform.isLinux ''
-    gappsWrapperArgs+=(--prefix PATH : ${lib.makeBinPath [ xdg-utils ]})
+    gappsWrapperArgs+=(
+      --prefix PATH : ${lib.makeBinPath [ xdg-utils ]}
+      --set MAGPIE_BUN ${lib.getExe bun}
+    )
   '';
 
   postInstall =
@@ -123,6 +129,7 @@ buildGoLatestModule (finalAttrs: {
     grep -F 'Exec=magpie %u' "$out/share/applications/magpie.desktop"
     grep -F 'x-scheme-handler/magpie' "$out/share/applications/magpie.desktop"
     grep -a -q "$out/bin/magpie" "$out/bin/.magpie-wrapped"
+    grep -q ${lib.getExe bun} "$out/bin/magpie"
     test -f "$out/share/icons/hicolor/256x256/apps/magpie.png"
   ''
   + lib.optionalString stdenv.hostPlatform.isDarwin ''
