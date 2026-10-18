@@ -17,6 +17,7 @@ NUR entry points in `default.nix`, `overlay.nix`, and `ci.nix`.
 Supported systems are:
 
 - `aarch64-darwin`
+- `aarch64-linux`
 - `x86_64-linux`
 
 Keep these interfaces compatible when reorganizing internal files. A flake-only
@@ -154,7 +155,7 @@ validation is needed.
 
 On an Apple Silicon host, the normal flake check builds the Darwin checks. The
 all-systems no-build command only evaluates and instantiates the Linux outputs;
-do not report that as an actual `x86_64-linux` build.
+do not report that as an actual `aarch64-linux` or `x86_64-linux` build.
 
 When changing `support/discover.nix`, add or run focused fixtures for regular
 files, `name/default.nix` directories, both symlink shapes, broken file symlinks,
