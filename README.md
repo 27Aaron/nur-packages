@@ -12,12 +12,14 @@
   <a href="https://github.com/27Aaron/nur-packages/commits/"><img alt="Commit activity" src="https://img.shields.io/github/commit-activity/y/27Aaron/nur-packages?style=for-the-badge&logo=upptime&color=B5E8E0&logoColor=D9E0EE&labelColor=302D41"></a>
 </p>
 
+Supported systems are `aarch64-darwin`, `aarch64-linux`, and `x86_64-linux`.
+
 ## Packages
 
 <!--START_SECTION:packages-->
 
 <details>
-<summary>Package set: (Uncategorized) (5 packages)</summary>
+<summary>Package set: (Uncategorized) (7 packages)</summary>
 
 | Name | Path | Version | Description |
 | --- | --- | --- | --- |
@@ -25,6 +27,8 @@
 | [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.1-rc.2 | Electron desktop shell for DeepSeek Harness |
 | [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2) | 2026.10.16 | MaxMind GeoLite2 ASN, City, and Country databases |
 | [kotonoha](https://github.com/locez/kotonoha) | [`kotonoha`](./pkgs/by-name/ko/kotonoha) | 0.2.3 | Linux desktop lyrics overlay for MPRIS players |
+| [magpie](https://github.com/yetone/magpie) | [`magpie`](./pkgs/by-name/ma/magpie) | 0.1.1285 | Terminal client for switching any agent's model |
+| [magpie-desktop](https://github.com/yetone/magpie) | [`magpie-desktop`](./pkgs/by-name/ma/magpie-desktop) | 0.1.1285 | Menu bar app for switching any agent's model |
 | [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit) | 0.1.11 | WeRead account management and reading challenge automation |
 
 </details>
