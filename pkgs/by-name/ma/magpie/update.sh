@@ -9,11 +9,10 @@ repository_root=$(git -C "$script_directory" rev-parse --show-toplevel)
 # shellcheck source=../../../../scripts/update-lib.sh
 source "$repository_root/scripts/update-lib.sh"
 
-readonly cli_hashes_file="$script_directory/hashes.json"
-readonly desktop_hashes_file="$script_directory/../magpie-desktop/hashes.json"
+readonly hashes_file="$script_directory/hashes.json"
 readonly release_api="https://api.github.com/repos/yetone/magpie/releases/latest"
-readonly cli_package_file="pkgs/by-name/ma/magpie/package.nix"
-readonly desktop_package_file="pkgs/by-name/ma/magpie-desktop/package.nix"
+readonly gui_package_file="pkgs/by-name/ma/magpie/package.nix"
+readonly cli_package_file="pkgs/by-name/ma/magpie-cli/package.nix"
 
 release=$(github_api "$release_api")
 latest_version=$(jq --exit-status --raw-output '
@@ -21,13 +20,7 @@ latest_version=$(jq --exit-status --raw-output '
   | .tag_name
   | capture("^v(?<version>[0-9]+\\.[0-9]+\\.[0-9]+)$").version
 ' <<<"$release")
-current_version=$(jq --exit-status --raw-output .version "$cli_hashes_file")
-desktop_version=$(jq --exit-status --raw-output .version "$desktop_hashes_file")
-
-if [[ $current_version != "$desktop_version" ]]; then
-  echo "magpie and magpie-desktop hashes disagree ($current_version vs $desktop_version)" >&2
-  exit 1
-fi
+current_version=$(jq --exit-status --raw-output .version "$hashes_file")
 
 if [[ $current_version == "$latest_version" ]]; then
   echo "magpie is already up to date ($current_version)"
@@ -56,9 +49,9 @@ trap cleanup EXIT
 
 candidate_data=$(jq --null-input \
   --arg version "$latest_version" \
-  --arg hash "$source_hash" \
+  --arg sourceHash "$source_hash" \
   --arg vendorHash "$dummy_sha256" \
-  '{ version: $version, hash: $hash, vendorHash: $vendorHash }')
+  '{ version: $version, sourceHash: $sourceHash, vendorHash: $vendorHash }')
 
 if build_candidate \
   "$repository_root" \
@@ -86,12 +79,11 @@ fi
 
 version_data=$(jq --null-input \
   --arg version "$latest_version" \
-  --arg hash "$source_hash" \
+  --arg sourceHash "$source_hash" \
   --arg vendorHash "$vendor_hash" \
-  '{ version: $version, hash: $hash, vendorHash: $vendorHash }')
+  '{ version: $version, sourceHash: $sourceHash, vendorHash: $vendorHash }')
 
 build_candidate "$repository_root" "$cli_package_file" "$version_data"
-build_candidate "$repository_root" "$desktop_package_file" "$version_data"
-write_json_data "$cli_hashes_file" "$version_data"
-write_json_data "$desktop_hashes_file" "$version_data"
-echo "Updated magpie and magpie-desktop to $latest_version"
+build_candidate "$repository_root" "$gui_package_file" "$version_data"
+write_json_data "$hashes_file" "$version_data"
+echo "Updated magpie and magpie-cli to $latest_version"

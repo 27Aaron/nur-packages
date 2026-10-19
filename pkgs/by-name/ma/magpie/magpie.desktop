@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
 Name=magpie
-GenericName=Model switcher
-Comment=Switch any agent's model from one menu bar app
+GenericName=Model picker
+Comment=Every agent's model. One place.
 Exec=magpie %u
 Icon=magpie
 Terminal=false
