@@ -9,6 +9,7 @@
   webkitgtk_4_1,
   desktop-file-utils,
   xdg-utils,
+  glib-networking,
   bun,
   makeBinaryWrapper,
   # Name nixpkgs' Bun instead of letting magpie download one: what it
@@ -128,6 +129,9 @@ buildGoModule (finalAttrs: {
   buildInputs = lib.optionals (gui && stdenv.hostPlatform.isLinux) [
     gtk3
     webkitgtk_4_1
+    # libsoup's HTTPS is the GIO TLS module. Without it the window loads
+    # local pages, then fails every remote image and request.
+    glib-networking
   ];
 
   # The upstream tests drive a real GUI, a real keychain and real agent
@@ -209,6 +213,7 @@ buildGoModule (finalAttrs: {
     grep -F 'x-scheme-handler/magpie' "$out/share/applications/magpie.desktop"
     grep -F 'Categories=Development;Utility;' "$out/share/applications/magpie.desktop"
     test -f "$out/share/icons/hicolor/256x256/apps/magpie.png"
+    grep -q ${lib.getLib glib-networking}/lib/gio/modules "$out/bin/magpie"
   ''
   + lib.optionalString (gui && stdenv.hostPlatform.isDarwin) ''
     app="$out/Applications/magpie.app"
