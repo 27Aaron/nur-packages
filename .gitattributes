@@ -1,0 +1,3 @@
+# Patch files carry upstream source verbatim, including tabs after the diff
+# marker. Keep `git diff --check` from reading them as whitespace errors.
+*.patch -whitespace

@@ -1,0 +1,140 @@
+diff --git a/internal/autostart/autostart.go b/internal/autostart/autostart.go
+index 5cbb147..01f5f68 100644
+--- a/internal/autostart/autostart.go
++++ b/internal/autostart/autostart.go
+@@ -42,7 +42,7 @@ func self() (string, error) {
+ 	if p := os.Getenv("APPIMAGE"); p != "" {
+ 		return p, nil
+ 	}
+-	exe, err := os.Executable()
++	exe, err := "@self@", error(nil)
+ 	if err != nil {
+ 		return "", err
+ 	}
+diff --git a/internal/cli/update_cli.go b/internal/cli/update_cli.go
+index 2fc5278..55b6a19 100644
+--- a/internal/cli/update_cli.go
++++ b/internal/cli/update_cli.go
+@@ -171,6 +171,9 @@ func updateCmd(args []string) error {
+ 	if len(args) > 1 && args[1] == "check" {
+ 		return nil
+ 	}
++	if exe, err := update.Executable(); err == nil && strings.Contains(exe, "/nix/store/") {
++		return fmt.Errorf("this magpie was installed with Nix; update that package instead")
++	}
+ 	if !update.Released(version) {
+ 		return fmt.Errorf("this magpie was built from source; update it the way you built it, or get the release from %s", update.Site)
+ 	}
+diff --git a/internal/gui/assets/app.js b/internal/gui/assets/app.js
+index 71452d6..aac48b2 100644
+--- a/internal/gui/assets/app.js
++++ b/internal/gui/assets/app.js
+@@ -4144,6 +4144,7 @@ async function backAsNew(was) {
+ // container, whose image is what gets updated.
+ function updateStuck(u) {
+   if (u.stuck === "container") return t("magpie runs in a container, so it can't update itself; pull the new image (docker pull ghcr.io/yetone/magpie:latest) and recreate the container.");
++  if (u.stuck === "nix") return t("this magpie was installed with Nix, so it can't update itself; update the package, then restart it.");
+   if (u.stuck === "not-writable") return t("magpie can't write to the folder it runs from ({dir}), so it can't update itself; move it to a folder you can write to and open it from there.", { dir: u.stuckDir || "" });
+   return u.stuck === "translocated"
+     ? t("macOS is running magpie from a temporary copy, so it can't update itself; move magpie to Applications and open it from there.")
+diff --git a/internal/gui/assets/i18n.js b/internal/gui/assets/i18n.js
+index 7d11c7f..87d3602 100644
+--- a/internal/gui/assets/i18n.js
++++ b/internal/gui/assets/i18n.js
+@@ -2947,6 +2947,7 @@ const I18N = {
+     "magpie is running from its disk image, so it can't update itself; drag it to Applications and open it from there.": "magpie 正从磁盘映像运行，无法自动更新；请将它拖到「应用程序」文件夹后从那里打开。",
+     "magpie can't write to the folder it runs from ({dir}), so it can't update itself; move it to a folder you can write to and open it from there.": "magpie 无法写入它所在的文件夹（{dir}），所以无法自动更新；请把它移到你有写入权限的文件夹，再从那里打开。",
+     "magpie runs in a container, so it can't update itself; pull the new image (docker pull ghcr.io/yetone/magpie:latest) and recreate the container.": "magpie 运行在容器里，无法自动更新；请拉取新镜像（docker pull ghcr.io/yetone/magpie:latest）并重新创建容器。",
++    "this magpie was installed with Nix, so it can't update itself; update the package, then restart it.": "这个 magpie 由 Nix 安装，无法自行更新；请更新这个包，然后重新打开。",
+     "Config folder": "配置目录",
+     "Command line": "命令行",
+     "Checking your shells…": "正在检查你的 shell…",
+@@ -6641,6 +6642,7 @@ const I18N = {
+     "magpie is running from its disk image, so it can't update itself; drag it to Applications and open it from there.": "magpie 正從磁碟映像執行，無法自動更新；請將它拖到「應用程式」資料夾後從那裡開啟。",
+     "magpie can't write to the folder it runs from ({dir}), so it can't update itself; move it to a folder you can write to and open it from there.": "magpie 無法寫入它所在的資料夾（{dir}），所以無法自動更新；請把它移到你有寫入權限的資料夾，再從那裡開啟。",
+     "magpie runs in a container, so it can't update itself; pull the new image (docker pull ghcr.io/yetone/magpie:latest) and recreate the container.": "magpie 在容器中執行，無法自動更新；請拉取新映像（docker pull ghcr.io/yetone/magpie:latest）並重新建立容器。",
++    "this magpie was installed with Nix, so it can't update itself; update the package, then restart it.": "這個 magpie 由 Nix 安裝，無法自行更新；請更新這個套件，然後重新開啟。",
+     "Config folder": "設定目錄",
+     "Command line": "命令列",
+     "Checking your shells…": "正在檢查你的 shell…",
+@@ -10347,6 +10349,7 @@ const I18N = {
+     "magpie is running from its disk image, so it can't update itself; drag it to Applications and open it from there.": "magpie がディスクイメージから実行されているため、自動アップデートできません。「アプリケーション」フォルダにドラッグし、そこから開いてください。",
+     "magpie can't write to the folder it runs from ({dir}), so it can't update itself; move it to a folder you can write to and open it from there.": "magpie は実行中のフォルダ（{dir}）に書き込めないため、自動アップデートできません。書き込み可能なフォルダに移動し、そこから開いてください。",
+     "magpie runs in a container, so it can't update itself; pull the new image (docker pull ghcr.io/yetone/magpie:latest) and recreate the container.": "magpie はコンテナで実行されているため、自動アップデートできません。新しいイメージを取得し（docker pull ghcr.io/yetone/magpie:latest）、コンテナを作り直してください。",
++    "this magpie was installed with Nix, so it can't update itself; update the package, then restart it.": "この magpie は Nix でインストールされているため、自動アップデートできません。パッケージを更新してから、開き直してください。",
+     "Config folder": "設定フォルダ",
+     "Command line": "コマンドライン",
+     "Checking your shells…": "シェルを確認しています…",
+@@ -14063,6 +14066,7 @@ const I18N = {
+     "magpie is running from its disk image, so it can't update itself; drag it to Applications and open it from there.": "magpie läuft aus seinem Disk-Image und kann sich daher nicht selbst aktualisieren; ziehen Sie es in „Programme“ und öffnen Sie es von dort.",
+     "magpie can't write to the folder it runs from ({dir}), so it can't update itself; move it to a folder you can write to and open it from there.": "magpie kann nicht in den Ordner schreiben, aus dem es läuft ({dir}), und kann sich daher nicht selbst aktualisieren; verschieben Sie es in einen Ordner mit Schreibrechten und öffnen Sie es von dort.",
+     "magpie runs in a container, so it can't update itself; pull the new image (docker pull ghcr.io/yetone/magpie:latest) and recreate the container.": "magpie läuft in einem Container und kann sich daher nicht selbst aktualisieren; laden Sie das neue Image (docker pull ghcr.io/yetone/magpie:latest) und erstellen Sie den Container neu.",
++    "this magpie was installed with Nix, so it can't update itself; update the package, then restart it.": "Dieses magpie wurde mit Nix installiert und kann sich daher nicht selbst aktualisieren; aktualisieren Sie das Paket und starten Sie es neu.",
+     "Config folder": "Konfigurationsordner",
+     "Command line": "Befehlszeile",
+     "Checking your shells…": "Shells werden geprüft…",
+diff --git a/internal/gui/instance_unix.go b/internal/gui/instance_unix.go
+index 3aea007..5f4fb7e 100644
+--- a/internal/gui/instance_unix.go
++++ b/internal/gui/instance_unix.go
+@@ -38,7 +38,7 @@ func instanceLock(dir, exe string) string {
+ // app bundle, or Homebrew's.
+ func installedCopy(exe string) bool {
+ 	exe = filepath.ToSlash(exe)
+-	return strings.Contains(exe, ".app/Contents/MacOS/") || strings.Contains(exe, "/Cellar/magpie/")
++	return strings.Contains(exe, ".app/Contents/MacOS/") || strings.Contains(exe, "/Cellar/magpie/") || strings.Contains(exe, "/nix/store/")
+ }
+ 
+ // holdInstance takes the lock at path for this process, or reports that
+diff --git a/internal/gui/scheme_linux.go b/internal/gui/scheme_linux.go
+index 301b093..ea1f53d 100644
+--- a/internal/gui/scheme_linux.go
++++ b/internal/gui/scheme_linux.go
+@@ -36,6 +36,7 @@ func dataHome() string {
+ // installed beside it. An entry that already runs this executable, claims
+ // it and names the window class is left alone.
+ func registerScheme() error {
++	return nil
+ 	// The package supplies the host entry; this executable is inside the sandbox.
+ 	if os.Getenv("FLATPAK_ID") != "" {
+ 		return nil
+diff --git a/internal/gui/update.go b/internal/gui/update.go
+index f6a70d0..5e6b706 100644
+--- a/internal/gui/update.go
++++ b/internal/gui/update.go
+@@ -181,6 +181,9 @@ func (u *updater) placeExe(exe string) {
+ // run as nonroot): there the new image is pulled, and "move it to a folder
+ // you can write to" was the wrong advice.
+ func exeStuck(dir string) string {
++	if strings.Contains(dir, "/nix/store/") {
++		return "nix"
++	}
+ 	if update.Writable(dir) || canElevate() {
+ 		return ""
+ 	}
+diff --git a/internal/update/admin.go b/internal/update/admin.go
+index 812f228..0c3c796 100644
+--- a/internal/update/admin.go
++++ b/internal/update/admin.go
+@@ -42,6 +42,8 @@ func CanElevate() bool {
+ // (App Translocation) because it was never moved out of Downloads.
+ func Stuck(bundle string) string {
+ 	switch {
++	case strings.Contains(bundle, "/nix/store/"):
++		return "nix"
+ 	case strings.Contains(bundle, "/AppTranslocation/"):
+ 		return "translocated"
+ 	case readOnly(bundle):
+diff --git a/internal/update/cli_path.go b/internal/update/cli_path.go
+index 2a127ca..6b9dca4 100644
+--- a/internal/update/cli_path.go
++++ b/internal/update/cli_path.go
+@@ -128,6 +128,8 @@ func AddCLI(shell string) (*CLI, error) {
+ 	switch cliStuck() {
+ 	case "translocated":
+ 		return nil, errors.New("macOS runs magpie from a temporary copy until it is moved to Applications: move it there, open it again, then add the command")
++	case "nix":
++		return nil, errors.New("this magpie was installed with Nix; update that package instead of copying the command")
+ 	case "read-only":
+ 		return nil, errors.New("magpie is running from its disk image: copy it to Applications, open it from there, then add the command")
+ 	}
