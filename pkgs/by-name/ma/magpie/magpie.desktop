@@ -6,6 +6,6 @@ Comment=Every agent's model. One place.
 Exec=magpie %u
 Icon=magpie
 Terminal=false
-Categories=Utility;
+Categories=Development;Utility;
 StartupWMClass=magpie
 MimeType=x-scheme-handler/magpie;
