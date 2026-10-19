@@ -79,7 +79,16 @@ buildGoModule (finalAttrs: {
         --replace-fail 'erstellen Sie den Container neu.",' 'erstellen Sie den Container neu.",'$'\n    "this magpie was installed with Nix, so it can\'t update itself; update the package, then restart it.": "Dieses magpie wurde mit Nix installiert und kann sich daher nicht selbst aktualisieren; aktualisieren Sie das Paket und starten Sie es neu.",'
     '';
 
-  env.CGO_ENABLED = if gui then "1" else "0";
+  env = {
+    CGO_ENABLED = if gui then "1" else "0";
+  }
+  // lib.optionalAttrs (gui && stdenv.hostPlatform.isDarwin) {
+    # Wails passes -mmacosx-version-min=10.13. This SDK's linker clamps that
+    # to 11.0, while the objects are built for darwinMinVersion, so ld warns
+    # on every file. Upstream's 12.0 is still older than these objects.
+    CGO_CFLAGS = "-mmacosx-version-min=${stdenv.hostPlatform.darwinMinVersion}";
+    CGO_LDFLAGS = "-mmacosx-version-min=${stdenv.hostPlatform.darwinMinVersion}";
+  };
 
   # The Makefile's TAGS. `gtk3` picks GTK 3 and WebKitGTK 4.1 over Wails'
   # default GTK 4 and WebKitGTK 6.
@@ -151,7 +160,10 @@ buildGoModule (finalAttrs: {
       cp build/darwin/magpie.icns build/darwin/Assets.car \
         "$app/Contents/Resources/"
       substitute build/darwin/Info.plist "$app/Contents/Info.plist" \
-        --replace-fail '@VERSION@' '${finalAttrs.version}'
+        --replace-fail '@VERSION@' '${finalAttrs.version}' \
+        --replace-fail \
+          '<key>LSMinimumSystemVersion</key><string>12.0</string>' \
+          '<key>LSMinimumSystemVersion</key><string>${stdenv.hostPlatform.darwinMinVersion}</string>'
     ''
     + ''
       install -Dm644 LICENSE "$out/share/licenses/${finalAttrs.pname}/LICENSE"
@@ -178,6 +190,11 @@ buildGoModule (finalAttrs: {
       wrapProgram "$out/bin/magpie" \
         ${lib.optionalString withBun "--set MAGPIE_BUN ${lib.getExe bun}"} \
         ${lib.optionalString stdenv.hostPlatform.isLinux "--prefix PATH : ${lib.makeBinPath [ xdg-utils ]}"}
+    ''
+    # After the wrapper exists. A linker signature does not seal Info.plist
+    # or the resources, so codesign rejects the bundle.
+    + lib.optionalString (gui && stdenv.hostPlatform.isDarwin) ''
+      /usr/bin/codesign --force --sign - "$out/Applications/magpie.app"
     '';
 
   doInstallCheck = true;
@@ -199,6 +216,14 @@ buildGoModule (finalAttrs: {
     test ! -L "$app/Contents/MacOS/magpie"
     test "$(realpath "$out/bin/magpie")" = "$app/Contents/MacOS/magpie"
     grep -F '${finalAttrs.version}' "$app/Contents/Info.plist"
+    grep -F '<string>${stdenv.hostPlatform.darwinMinVersion}</string>' "$app/Contents/Info.plist"
+    /usr/bin/codesign --verify --deep --strict "$app"
+    if [ -e "$app/Contents/MacOS/.magpie-wrapped" ]; then
+      linked="$app/Contents/MacOS/.magpie-wrapped"
+    else
+      linked="$app/Contents/MacOS/magpie"
+    fi
+    otool -l "$linked" | awk '/LC_BUILD_VERSION/{p=1} p && /minos/{print; exit}' | grep -F '${stdenv.hostPlatform.darwinMinVersion}'
   ''
   + lib.optionalString withBun ''
     grep -q ${lib.getExe bun} "$out/bin/magpie"
