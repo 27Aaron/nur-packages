@@ -27,8 +27,8 @@ Supported systems are `aarch64-darwin`, `aarch64-linux`, and `x86_64-linux`.
 | [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.1-rc.2 | Electron desktop shell for DeepSeek Harness |
 | [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2) | 2026.10.16 | MaxMind GeoLite2 ASN, City, and Country databases |
 | [kotonoha](https://github.com/locez/kotonoha) | [`kotonoha`](./pkgs/by-name/ko/kotonoha) | 0.3.0 | Linux desktop lyrics overlay for MPRIS players |
-| [magpie](https://github.com/yetone/magpie) | [`magpie`](./pkgs/by-name/ma/magpie) | 0.1.1290 | Every agent's model. One place. |
-| [magpie-desktop](https://github.com/yetone/magpie) | [`magpie-desktop`](./pkgs/by-name/ma/magpie-desktop) | 0.1.1290 | Every agent's model. One place. |
+| [magpie](https://usemagpie.ai/) | [`magpie`](./pkgs/by-name/ma/magpie) | 0.1.1290 | Pick the model each AI coding agent on your machine uses |
+| [magpie-cli](https://usemagpie.ai/) | [`magpie-cli`](./pkgs/by-name/ma/magpie-cli) | 0.1.1290 | Pick the model each AI coding agent on your machine uses |
 | [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit) | 0.1.11 | WeRead account management and reading challenge automation |
 
 </details>
