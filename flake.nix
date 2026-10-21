@@ -14,7 +14,13 @@
         "x86_64-linux"
       ];
       forAllSystems = lib.genAttrs systems;
-      pkgsFor = forAllSystems (system: import nixpkgs { inherit system; });
+      pkgsFor = forAllSystems (
+        system:
+        import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        }
+      );
       repositorySource = builtins.path {
         name = "nur-packages-source";
         path = ./.;
