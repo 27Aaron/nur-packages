@@ -19,7 +19,7 @@ Supported systems are `aarch64-darwin`, `aarch64-linux`, and `x86_64-linux`.
 <!--START_SECTION:packages-->
 
 <details>
-<summary>Package set: (Uncategorized) (8 packages)</summary>
+<summary>Package set: (Uncategorized) (7 packages)</summary>
 
 | Name | Path | Version | Description |
 | --- | --- | --- | --- |
@@ -29,7 +29,6 @@ Supported systems are `aarch64-darwin`, `aarch64-linux`, and `x86_64-linux`.
 | [kotonoha](https://github.com/locez/kotonoha) | [`kotonoha`](./pkgs/by-name/ko/kotonoha) | 0.3.1 | Linux desktop lyrics overlay for MPRIS players |
 | [magpie](https://usemagpie.ai/) | [`magpie`](./pkgs/by-name/ma/magpie) | 0.1.1305 | Pick the model each AI coding agent on your machine uses |
 | [magpie-cli](https://usemagpie.ai/) | [`magpie-cli`](./pkgs/by-name/ma/magpie-cli) | 0.1.1305 | Pick the model each AI coding agent on your machine uses |
-| [manggo](https://manggo.pylogmon.cn/) | [`manggo`](./pkgs/by-name/ma/manggo) | 1.2.0 | Desktop translation and screenshot OCR assistant |
 | [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit) | 0.1.11 | WeRead account management and reading challenge automation |
 
 </details>
