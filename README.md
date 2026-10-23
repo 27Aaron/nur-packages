@@ -24,12 +24,12 @@ Supported systems are `aarch64-darwin`, `aarch64-linux`, and `x86_64-linux`.
 | Name | Path | Version | Description |
 | --- | --- | --- | --- |
 | [bilihud](https://github.com/locez/bilihud) | [`bilihud`](./pkgs/by-name/bi/bilihud) | 0.7.1 | Bilibili live-stream danmaku overlay for fullscreen games |
-| [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.1-rc.2 | Electron desktop shell for DeepSeek Harness |
+| [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.1-rc.3 | Electron desktop shell for DeepSeek Harness |
 | [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2) | 2026.10.22 | MaxMind GeoLite2 ASN, City, and Country databases |
 | [kotonoha](https://github.com/locez/kotonoha) | [`kotonoha`](./pkgs/by-name/ko/kotonoha) | 0.3.1 | Linux desktop lyrics overlay for MPRIS players |
-| [magpie](https://usemagpie.ai/) | [`magpie`](./pkgs/by-name/ma/magpie) | 0.1.1327 | Pick the model each AI coding agent on your machine uses |
-| [magpie-cli](https://usemagpie.ai/) | [`magpie-cli`](./pkgs/by-name/ma/magpie-cli) | 0.1.1327 | Pick the model each AI coding agent on your machine uses |
-| [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit) | 0.1.11 | WeRead account management and reading challenge automation |
+| [magpie](https://usemagpie.ai/) | [`magpie`](./pkgs/by-name/ma/magpie) | 0.1.1363 | Pick the model each AI coding agent on your machine uses |
+| [magpie-cli](https://usemagpie.ai/) | [`magpie-cli`](./pkgs/by-name/ma/magpie-cli) | 0.1.1363 | Pick the model each AI coding agent on your machine uses |
+| [weread-kit](https://github.com/27Aaron/WeRead-Kit) | [`weread-kit`](./pkgs/by-name/we/weread-kit) | 0.1.12 | WeRead account management and reading challenge automation |
 
 </details>
 <!--END_SECTION:packages-->
