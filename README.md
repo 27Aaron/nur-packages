@@ -19,11 +19,12 @@ Supported systems are `aarch64-darwin`, `aarch64-linux`, and `x86_64-linux`.
 <!--START_SECTION:packages-->
 
 <details>
-<summary>Package set: (Uncategorized) (7 packages)</summary>
+<summary>Package set: (Uncategorized) (8 packages)</summary>
 
 | Name | Path | Version | Description |
 | --- | --- | --- | --- |
 | [bilihud](https://github.com/locez/bilihud) | [`bilihud`](./pkgs/by-name/bi/bilihud) | 0.7.1 | Bilibili live-stream danmaku overlay for fullscreen games |
+| [cloudflared](https://github.com/cloudflare/cloudflared) | [`cloudflared`](./pkgs/by-name/cl/cloudflared) | 2026.10.5 | Client for Cloudflare Tunnel, Access, and DNS over HTTPS |
 | [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.1-rc.3 | Electron desktop shell for DeepSeek Harness |
 | [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2) | 2026.10.25 | MaxMind GeoLite2 ASN, City, and Country databases |
 | [kotonoha](https://github.com/locez/kotonoha) | [`kotonoha`](./pkgs/by-name/ko/kotonoha) | 0.3.1 | Linux desktop lyrics overlay for MPRIS players |
