@@ -125,28 +125,19 @@ checkout when an end-to-end update test is required.
 
 ## Validation
 
-Run checks in proportion to the change. For repository-wide or shared discovery
-changes, use the full set below:
+`scripts/check.sh` is the single validation entry point and the same suite CI
+runs. It covers formatting, evaluation on every supported system, a real
+`nix flake check` build pass, the generated README table, expected discovery
+evaluation failures, updater coverage, shell syntax, the classic NUR
+selectors, and whitespace checks. Run checks in proportion to the change; for
+repository-wide or shared discovery changes, use the full suite:
 
 ```console
-nix fmt
-nix fmt -- --ci
-nix flake check --no-build --all-systems --no-write-lock-file
-nix flake check --no-write-lock-file
-checks/check-eval-failures.sh
-find scripts checks pkgs/by-name -type f -name '*.sh' -exec bash -n {} +
-git diff --check
-git diff --cached --check
+./scripts/check.sh
 ```
 
-Also validate the classic NUR selectors when changing package discovery,
-reserved names, overlays, or CI logic:
-
-```console
-nix-instantiate --eval -A buildOutputs ci.nix
-nix-instantiate --eval -A cacheOutputs ci.nix
-nix-instantiate --eval -A cachePaths ci.nix
-```
+Use `./scripts/check.sh --no-build` when the affected packages were already
+built and only the evaluation-level suite is needed.
 
 Do not add `--strict` to those derivation-list commands with the current
 Lix toolchain: it can terminate the evaluator with status 139 while printing

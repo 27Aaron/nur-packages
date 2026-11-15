@@ -114,14 +114,10 @@ jobs:
 
       - name: Validate update
         if: steps.detect.outputs.changed == 'true'
-        run: |
-          nix fmt -- --ci
-          nix flake check --no-build --all-systems --no-write-lock-file
-          nix run path:.#update-readme -- --check
-          checks/check-eval-failures.sh
-          checks/check-updaters.sh
-          find scripts checks pkgs/by-name -type f -name '*.sh' -exec bash -n {} +
-          git diff --check
+        # Full local suite minus the build pass: the updaters already built
+        # every changed candidate, and an unrelated package should not be
+        # rebuilt from scratch just to publish a version bump.
+        run: ./scripts/check.sh --no-build
 
       - name: Serialize validated patch
         id: serialize

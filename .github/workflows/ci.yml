@@ -29,28 +29,9 @@ jobs:
         with:
           github_access_token: ${{ github.token }}
 
-      - name: Check formatting
-        run: nix fmt -- --ci
-
-      - name: Evaluate every supported system
-        run: nix flake check --no-build --all-systems --no-write-lock-file
-
-      # The checks output contains every package supported on this system, so
-      # this step is the real build smoke test; the eval-only step above cannot
-      # substitute for it.
-      - name: Build checks and packages
-        run: nix flake check --no-write-lock-file
-
-      - name: Check generated package table
-        run: nix run path:.#update-readme -- --check
-
-      - name: Test expected evaluation failures
-        run: checks/check-eval-failures.sh
-
-      - name: Check package updater coverage
-        run: checks/check-updaters.sh
-
-      - name: Check diffs
-        run: |
-          git diff --check
-          git diff --cached --check
+      # The same suite scripts/check.sh runs locally: formatting, evaluation
+      # on every supported system, a real build of all checks and packages,
+      # the generated README table, updater coverage, shell syntax, the
+      # classic NUR selectors, and whitespace checks.
+      - name: Validate
+        run: ./scripts/check.sh
