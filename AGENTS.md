@@ -116,8 +116,12 @@ these properties when editing it:
 - File enumeration is deterministic and NUL-delimited.
 - Ripgrep exit code `1` means no files; exit codes greater than `1` are errors
   and must propagate.
-- Failures from file enumeration and package update scripts must never be
-  hidden by a conditional or process substitution.
+- Failures from file enumeration are fatal and abort the run immediately.
+- A failing package update script is failure-isolated: the remaining updaters
+  still run, the failed package is left unchanged, all failures are reported at
+  the end, the overall exit status is non-zero, and the optional
+  `NUR_UPDATE_FAILURES_FILE` receives the failed package names so CI can
+  publish partial updates with the failures listed in the pull request.
 
 Running the update app may update package versions and dependency hashes.
 Do not use it as a casual smoke test in the main working tree; use a temporary

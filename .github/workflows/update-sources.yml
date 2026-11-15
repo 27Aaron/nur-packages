@@ -44,10 +44,16 @@ jobs:
         run: nix flake update
 
       - name: Update package sources
+        id: update_sources
+        # A single failing updater must not block updates for the remaining
+        # packages; failures are summarized in the pull request instead.
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
           UPDATE_PACKAGES: ${{ github.event.inputs.packages || '' }}
+          NUR_UPDATE_FAILURES_FILE: ${{ runner.temp }}/failed-updates
         run: |
+          touch "$RUNNER_TEMP/failed-updates"
           # The unquoted expansion splits the optional package list into arguments.
           # shellcheck disable=SC2086
           nix run path:.#update-sources -- $UPDATE_PACKAGES
@@ -105,6 +111,15 @@ jobs:
               fi
             done <"$RUNNER_TEMP/changed-files"
           } >"$RUNNER_TEMP/summary.md"
+
+          if [[ -s "$RUNNER_TEMP/failed-updates" ]]; then
+            {
+              echo ""
+              echo "### Failed updaters (left unchanged)"
+              echo ""
+              sed 's/^/- /' "$RUNNER_TEMP/failed-updates"
+            } >>"$RUNNER_TEMP/summary.md"
+          fi
 
           {
             echo "summary<<UPDATE_SUMMARY_EOF"
