@@ -95,15 +95,19 @@ python3Packages.buildPythonApplication (finalAttrs: {
     "--config-setting=cmake.define.BILIHUD_LAYER_SHELL=${if isLinux then "ON" else "OFF"}"
   ];
 
-  # Let the Python application wrapper carry Qt's plugin and platform paths.
+  # Let the Python application wrapper carry Qt's plugin and platform paths;
+  # expand qtWrapperArgs in a shell hook, because with __structuredAttrs the
+  # literal "\${qtWrapperArgs[@]}" in makeWrapperArgs is never re-expanded.
   dontWrapQtApps = isLinux;
   makeWrapperArgs = lib.optionals isLinux [
-    "\${qtWrapperArgs[@]}"
     "--prefix"
     "LD_LIBRARY_PATH"
     ":"
     (lib.makeLibraryPath [ pipewire ])
   ];
+  preFixup = lib.optionalString isLinux ''
+    makeWrapperArgs+=("''${qtWrapperArgs[@]}")
+  '';
 
   postInstall = ''
     install -Dm644 bilihud.desktop "$out/share/applications/bilihud.desktop"
