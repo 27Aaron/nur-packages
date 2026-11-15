@@ -1,4 +1,5 @@
 /.cache/
+.DS_Store
 /result
 /result-*
 /secrets.toml

@@ -15,7 +15,6 @@ let
   inherit (pkgs) lib;
   inherit (builtins)
     attrValues
-    concatLists
     filter
     isAttrs
     map
@@ -37,8 +36,6 @@ let
   isCacheable = package: isFree package && !(package.preferLocalBuild or false);
   shouldRecurse = package: isAttrs package && package.recurseForDerivations or false;
 
-  concatMap = builtins.concatMap or (f: xs: concatLists (map f xs));
-
   flattenPackages =
     packages:
     let
@@ -51,14 +48,14 @@ let
         else
           [ ];
     in
-    concatMap flatten (attrValues packages);
+    builtins.concatMap flatten (attrValues packages);
   outputsOf = package: map (output: package.${output}) package.outputs;
   additionalCachePathsOf = package: package.cachePaths or [ ];
 in
 rec {
   buildPkgs = filter isBuildable (flattenPackages repository);
   cachePkgs = filter isCacheable buildPkgs;
-  buildOutputs = concatMap outputsOf buildPkgs;
-  cacheOutputs = concatMap outputsOf cachePkgs;
-  cachePaths = cacheOutputs ++ concatMap additionalCachePathsOf buildPkgs;
+  buildOutputs = builtins.concatMap outputsOf buildPkgs;
+  cacheOutputs = builtins.concatMap outputsOf cachePkgs;
+  cachePaths = cacheOutputs ++ builtins.concatMap additionalCachePathsOf buildPkgs;
 }

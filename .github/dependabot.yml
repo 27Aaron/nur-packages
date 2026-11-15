@@ -17,16 +17,3 @@ updates:
       github-actions:
         patterns:
           - "*"
-  - package-ecosystem: "nix"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    assignees:
-      - "27Aaron"
-    labels:
-      - "automation"
-      - "dependencies"
-      - "nix"
-    commit-message:
-      prefix: "build"
-      include: "scope"
