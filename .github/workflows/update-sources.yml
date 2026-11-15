@@ -2,9 +2,14 @@ name: Update flake lock and package sources
 
 on:
   workflow_dispatch:
+    inputs:
+      packages:
+        description: "Space-separated package names to update (empty for all)"
+        required: false
+        default: ""
   schedule:
-    # Nominally 04:13 Asia/Shanghai; GitHub may delay scheduled runs.
-    - cron: "13 20 * * *"
+    # Nominally 04:13 and 16:13 Asia/Shanghai; GitHub may delay scheduled runs.
+    - cron: "13 8,20 * * *"
 
 concurrency:
   group: update-dependencies
@@ -21,6 +26,7 @@ jobs:
     outputs:
       changed: ${{ steps.detect.outputs.changed }}
       patch: ${{ steps.serialize.outputs.patch }}
+      summary: ${{ steps.summarize.outputs.summary }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -40,7 +46,11 @@ jobs:
       - name: Update package sources
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: nix run path:.#update-sources
+          UPDATE_PACKAGES: ${{ github.event.inputs.packages || '' }}
+        run: |
+          # The unquoted expansion splits the optional package list into arguments.
+          # shellcheck disable=SC2086
+          nix run path:.#update-sources -- $UPDATE_PACKAGES
 
       - name: Detect and validate changed paths
         id: detect
@@ -72,6 +82,36 @@ jobs:
 
           echo "changed=true" >>"$GITHUB_OUTPUT"
 
+      - name: Summarize version changes
+        id: summarize
+        if: steps.detect.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+
+          {
+            while IFS= read -r changed_file; do
+              if [[ $changed_file =~ ^pkgs/by-name/[^/]+/[^/]+/hashes\.json$ ]]; then
+                package=$(basename "$(dirname "$changed_file")")
+                old_version=$(git show "HEAD:$changed_file" | jq --exit-status --raw-output .version)
+                new_version=$(jq --exit-status --raw-output .version "$changed_file")
+                echo "- $package: $old_version → $new_version"
+              elif [[ $changed_file == "flake.lock" ]]; then
+                old_rev=$(git show HEAD:flake.lock | jq --raw-output '.nodes.nixpkgs.locked.rev | .[0:8]')
+                new_rev=$(jq --raw-output '.nodes.nixpkgs.locked.rev | .[0:8]' flake.lock)
+                echo "- nixpkgs: \`$old_rev\` → \`$new_rev\`"
+              fi
+            done <"$RUNNER_TEMP/changed-files"
+          } >"$RUNNER_TEMP/summary.md"
+
+          {
+            echo "summary<<UPDATE_SUMMARY_EOF"
+            cat "$RUNNER_TEMP/summary.md"
+            echo "UPDATE_SUMMARY_EOF"
+          } >>"$GITHUB_OUTPUT"
+
       - name: Validate update
         if: steps.detect.outputs.changed == 'true'
         run: |
@@ -79,6 +119,7 @@ jobs:
           nix flake check --no-build --all-systems --no-write-lock-file
           nix run path:.#update-readme -- --check
           checks/check-eval-failures.sh
+          checks/check-updaters.sh
           find scripts checks pkgs/by-name -type f -name '*.sh' -exec bash -n {} +
           git diff --check
 
@@ -114,6 +155,7 @@ jobs:
         run: printf '%s' "$SOURCE_UPDATE_PATCH" | base64 --decode | git apply
 
       - name: Create pull request
+        id: create_pr
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.UPDATE_PR_TOKEN || github.token }}
@@ -137,12 +179,69 @@ jobs:
             - regenerate the README package index
             - build every changed package candidate before publishing
 
+            ## Version updates
+
+            ${{ needs.update.outputs.summary }}
+
             ## Automation
 
-            Created by the daily dependency updater.
+            Created by the scheduled dependency updater. Merges automatically
+            once every required check passes.
           assignees: 27Aaron
           labels: |
             automation
             documentation
             package
             source-update
+
+  merge:
+    name: Auto-merge after checks pass
+    needs: [update, publish]
+    if: needs.update.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      UPDATE_PR_TOKEN: ${{ secrets.UPDATE_PR_TOKEN }}
+    steps:
+      - name: Require automation token
+        shell: bash
+        run: |
+          if [[ -z $UPDATE_PR_TOKEN ]]; then
+            echo "::notice::UPDATE_PR_TOKEN is not configured; the update pull request stays open for manual merge" >&2
+            exit 1
+          fi
+
+      - name: Wait for checks and merge
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.UPDATE_PR_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -o errexit
+          set -o nounset
+          set -o pipefail
+
+          readonly pr_branch="automation/update-sources"
+
+          state=$(gh pr view "$pr_branch" --json state --jq .state)
+          if [[ $state != "OPEN" ]]; then
+            echo "Update pull request is not open (state: $state); nothing to merge"
+            exit 0
+          fi
+
+          head_sha=$(gh pr view "$pr_branch" --json headRefOid --jq .headRefOid)
+          if ! gh pr checks "$pr_branch" --watch --fail-fast --interval 30; then
+            echo "::error::Checks on the update pull request failed; leaving it open for inspection" >&2
+            exit 1
+          fi
+
+          current_sha=$(gh pr view "$pr_branch" --json headRefOid --jq .headRefOid)
+          if [[ $current_sha != "$head_sha" ]]; then
+            echo "::error::New commits appeared while waiting for checks; this run merges nothing" >&2
+            exit 1
+          fi
+
+          gh pr merge --squash --delete-branch "$pr_branch"

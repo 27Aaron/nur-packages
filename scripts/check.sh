@@ -15,6 +15,7 @@ nix run "$flake_ref#update-readme" -- --check
 nix flake check "$flake_ref" --no-write-lock-file
 
 checks/check-eval-failures.sh
+checks/check-updaters.sh
 
 find scripts checks pkgs/by-name -type f -name '*.sh' -exec bash -n {} +
 nixpkgs_path=$(

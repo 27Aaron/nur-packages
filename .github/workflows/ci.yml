@@ -47,6 +47,9 @@ jobs:
       - name: Test expected evaluation failures
         run: checks/check-eval-failures.sh
 
+      - name: Check package updater coverage
+        run: checks/check-updaters.sh
+
       - name: Check diffs
         run: |
           git diff --check
