@@ -74,6 +74,7 @@ let
     "react"
     "react-dom"
     "cos-nodejs-sdk-v5"
+    "zod"
     "@deepseek-ai/cordis"
     "@deepseek-ai/dsh-api-gateway"
     "@deepseek-ai/dsh-app-boot"
@@ -85,25 +86,28 @@ let
     "@deepseek-ai/dsh-client-ui-theme"
     "@deepseek-ai/dsh-deepseek-account"
     "@deepseek-ai/dsh-home-paths"
+    "@deepseek-ai/dsh-official-bundles"
+    "@deepseek-ai/dsh-plugin-manager"
+    "@deepseek-ai/dsh-util-file-drag"
     "@deepseek-ai/node-addon-system"
   ];
 
   # Host dependencies resolved by bare name at startup. Linked, not copied:
   # pnpm's layout is relative symlinks, and copying the subtree dangles them.
+  # Mirrors apps/desktop-host/package.json: upstream dropped libreoffice-kit,
+  # dsh-skill-office, dsh-tool-workspace-dependencies and dsh-home-paths from
+  # the Host manifest, and added dsh-plugin-manager.
   hostDependencies = [
     "cordis"
     "dsh-agent"
     "dsh-app-boot"
     "dsh-client-connection"
     "dsh-deepseek-account"
-    "dsh-home-paths"
     "dsh-host-webserver"
     "dsh-jobs"
+    "dsh-plugin-manager"
     "dsh-schedule"
-    "dsh-skill-office"
-    "dsh-tool-workspace-dependencies"
     "dsh-workspace"
-    "libreoffice-kit"
   ];
 
   dshRuntimeTree = stdenvNoCC.mkDerivation {
@@ -155,6 +159,12 @@ let
 
   vipsLib = lib.getLib vips;
 
+  # sharp ships a prebuilt native addon per Linux architecture, and pnpm
+  # installs the one matching the target platform. The package directory
+  # follows npm's naming: @img/sharp-linux-<arch> in the store, and
+  # @img+sharp-linux-<arch> in pnpm's virtual store.
+  sharpArch = if stdenvNoCC.targetPlatform.isAarch64 then "arm64" else "x64";
+
   # sharp's addon crashes on the libvips it ships (desktop.nix note 5). Stage a
   # dynamically linked substitute under the exact DT_NEEDED name the addon asks
   # for, and refuse a different upstream series.
@@ -171,7 +181,7 @@ let
 
     installPhase = ''
       runHook preInstall
-      addon="$(ls ${source}/node_modules/.pnpm/@img+sharp-linux-x64@*/node_modules/@img/sharp-linux-x64/lib/sharp-linux-x64-*.node)"
+      addon="$(ls ${source}/node_modules/.pnpm/@img+sharp-linux-${sharpArch}@*/node_modules/@img/sharp-linux-${sharpArch}/lib/sharp-linux-${sharpArch}-*.node)"
       if [ "$(printf '%s\n' "$addon" | wc -l)" -ne 1 ]; then
         echo "dsh-desktop: expected exactly one sharp addon, got: $addon" >&2
         exit 1

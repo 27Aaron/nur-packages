@@ -98,7 +98,7 @@
 #     (node-addon-native-custom-loader copies them out of the store first), so
 #     they do not inherit the Electron binary's RPATH; without it the Host aborts
 #     with "No usable native binding found for
-#     node-addon-require-builtin-linux-x64-gnu". It also carries the substituted
+#     node-addon-require-builtin-linux-<arch>-gnu". It also carries the substituted
 #     libvips directory, first, which note 5 explains.
 #
 #     PATH additionally carries bubblewrap, because dsh's own platform sandbox
@@ -112,8 +112,9 @@
 #
 #  5. sharp's native addon cannot run the libvips it ships with, so the package
 #     substitutes a dynamically linked one. The addon
-#     (node_modules/.pnpm/@img+sharp-linux-x64@*/.../sharp-linux-x64-<v>.node)
-#     requires a prebuilt libvips-cpp.so.8.18.3 that statically embeds its own
+#     (node_modules/.pnpm/@img+sharp-linux-<arch>@*/.../sharp-linux-<arch>-<v>.node,
+#     where <arch> is x64 or arm64) requires a prebuilt libvips-cpp.so.8.18.3
+#     that statically embeds its own
 #     glib: it exports 1791 g_* symbols and has no libglib-2.0.so.0 in its
 #     DT_NEEDED. Electron on Linux links a dynamically linked glib, and the
 #     addon's own seven glib references (g_object_ref, g_object_unref,
@@ -301,7 +302,7 @@ let
         inherit version pnpmVersion;
       };
       platform = "linux";
-      arch = if stdenvNoCC.hostPlatform.isAarch64 then "arm64" else "x64";
+      arch = if stdenvNoCC.targetPlatform.isAarch64 then "arm64" else "x64";
       sharedPackages = [
         {
           name = "@deepseek-ai/dsh";
@@ -638,7 +639,10 @@ stdenvNoCC.mkDerivation {
     changelog = "https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v${version}";
     license = lib.licenses.mit;
     sourceProvenance = [ lib.sourceTypes.binaryBytecode ];
-    platforms = [ "x86_64-linux" ];
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
     mainProgram = "dsh-desktop";
   };
 }

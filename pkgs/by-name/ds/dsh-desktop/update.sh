@@ -70,12 +70,13 @@ prefetch_pnpm_deps_hash() {
   local source_hash=$3
   local pnpm_version=$4
   local pnpm_hash=$5
+  local system=$6
   local log
   log=$(mktemp)
   if nix build --no-link --no-write-lock-file --impure --expr "
     let
       repository = builtins.getFlake (\"path:\" + $(jq --null-input --arg root "$repository_root" '$root'));
-      pkgs = repository.inputs.nixpkgs.legacyPackages.\${builtins.currentSystem};
+      pkgs = repository.inputs.nixpkgs.legacyPackages.${system};
       src = pkgs.fetchFromGitHub {
         owner = \"deepseek-ai\";
         repo = \"deepseek-harness\";
@@ -104,7 +105,7 @@ prefetch_pnpm_deps_hash() {
   if [[ -z $got ]]; then
     cat "$log" >&2
     rm -f "$log"
-    echo "Could not read the pnpm dependency hash" >&2
+    echo "Could not read the pnpm dependency hash for $system" >&2
     return 1
   fi
   rm -f "$log"
@@ -142,7 +143,15 @@ else
 fi
 
 echo "Fetching the pnpm dependency hash"
-pnpm_deps_hash=$(prefetch_pnpm_deps_hash "$latest_version" "$rev" "$source_hash" "$pnpm_version" "$pnpm_hash")
+# pnpm resolves optional dependencies per target architecture and sharp ships
+# a different prebuilt addon for each one, but fetchPnpmDeps pulls every
+# platform's optional dependencies with --force, so the fetched tree is the
+# same on both architectures and one hash covers them.
+pnpm_deps_hash=$(
+  prefetch_pnpm_deps_hash \
+    "$latest_version" "$rev" "$source_hash" "$pnpm_version" "$pnpm_hash" \
+    "$(nix eval --raw --impure --expr builtins.currentSystem)"
+)
 
 version_data=$(
   jq --null-input \
