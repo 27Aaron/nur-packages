@@ -53,7 +53,7 @@ window-rule {
 
 ## 限制
 
-- 只支援 `x86_64-linux`。
+- 只支援 Linux：`x86_64-linux` 與 `aarch64-linux`。
 - 自動更新不會生效。上游帶了 `electron-updater`，由 Nix 管理的安裝不會被它更新，升級請走 `nix`。
 - 這是下游重新打包，與 DeepSeek 沒有隸屬關係。
 

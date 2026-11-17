@@ -21,6 +21,12 @@ let
     hash = versionData.pnpmHash;
   };
 
+  # pnpm resolves optional dependencies per target architecture and sharp
+  # ships a different prebuilt addon for each one, but fetchPnpmDeps pulls
+  # every platform's optional dependencies with --force, so the fetched tree
+  # is the same on both architectures and one hash covers them.
+  pnpmDepsHash = versionData.pnpmDepsHash;
+
   # The runtime resolver reaches Node's internal module loader through the
   # prebuilt node-addon-require-builtin binary, which cannot locate V8's
   # builtin_module_require getter in nixpkgs' Node. The desktop Host is started
@@ -51,7 +57,7 @@ stdenv.mkDerivation (finalAttrs: {
     inherit pname version pnpm;
     inherit (finalAttrs) src;
     fetcherVersion = 4;
-    hash = versionData.pnpmDepsHash;
+    hash = pnpmDepsHash;
   };
 
   nativeBuildInputs = [
@@ -100,6 +106,9 @@ stdenv.mkDerivation (finalAttrs: {
     description = "Internal DeepSeek Harness build used by dsh-desktop";
     homepage = "https://github.com/deepseek-ai/deepseek-harness";
     license = lib.licenses.mit;
-    platforms = [ "x86_64-linux" ];
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
   };
 })

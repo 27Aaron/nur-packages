@@ -25,7 +25,7 @@ Supported systems are `aarch64-darwin`, `aarch64-linux`, and `x86_64-linux`.
 | --- | --- | --- | --- |
 | [bilihud](https://github.com/locez/bilihud) | [`bilihud`](./pkgs/by-name/bi/bilihud) | 0.7.2 | Bilibili live-stream danmaku overlay for fullscreen games |
 | [cloudflared](https://github.com/cloudflare/cloudflared) | [`cloudflared`](./pkgs/by-name/cl/cloudflared) | 2026.10.5 | Client for Cloudflare Tunnel, Access, and DNS over HTTPS |
-| [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.1-rc.3 | Electron desktop shell for DeepSeek Harness |
+| [dsh-desktop](https://github.com/deepseek-ai/deepseek-harness) | [`dsh-desktop`](./pkgs/by-name/ds/dsh-desktop) | 0.2.2-rc.3 | Electron desktop shell for DeepSeek Harness |
 | [geolite2](https://github.com/P3TERX/GeoLite.mmdb) | [`geolite2`](./pkgs/by-name/ge/geolite2) | 2026.11.16 | MaxMind GeoLite2 ASN, City, and Country databases |
 | [kotonoha](https://github.com/locez/kotonoha) | [`kotonoha`](./pkgs/by-name/ko/kotonoha) | 0.3.2 | Linux desktop lyrics overlay for MPRIS players |
 | [magpie-cli](https://usemagpie.ai/) | [`magpie-cli`](./pkgs/by-name/ma/magpie-cli) | 0.1.4343 | Pick the model each AI coding agent on your machine uses |
