@@ -47,8 +47,8 @@ python3Packages.buildPythonApplication (finalAttrs: {
   dependencies = with python3Packages; [
     aiohttp
     dbus-fast
-    mutagen
     pyqt6
+    pyyaml
     qasync
   ];
 
