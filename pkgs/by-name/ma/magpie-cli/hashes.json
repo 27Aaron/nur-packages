@@ -1,8 +1,8 @@
 {
-  "version": "0.1.4343",
+  "version": "0.1.4394",
   "assetHashes": {
-    "magpie-cli-linux-amd64": "sha256-28IUvieeAWzIARDGfnX2nz6L056bDw2Tex8W9VsXJRc=",
-    "magpie-cli-linux-arm64": "sha256-0d35TzodhHn93d5m/I4sn0mPUP1avbFdjBWEs66olBs="
+    "magpie-cli-linux-amd64": "sha256-JMK8C3g9Yk+37DwsUvtkbKOlkNHwpopwzBLXNIslaQM=",
+    "magpie-cli-linux-arm64": "sha256-eew/w/pRLniHymK+vOP9Ce21vF4ewH5zDTjAv25M/SQ="
   },
   "licenseHash": "sha256-edLIREcV1LxFPsT4oKryBRpMHuWsCPW9LlhIrvh8dXI="
 }
