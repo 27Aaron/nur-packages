@@ -73,7 +73,9 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   nativeInstallCheckInputs = [ versionCheckHook ];
   versionCheckProgramArg = "--version";
   # `magpie --version` touches its config directory, so give the check a
-  # throwaway HOME.
+  # throwaway HOME and let versionCheckHook pass it through its clean
+  # environment.
+  versionCheckKeepEnvironment = "HOME";
   preInstallCheck = ''
     export HOME=$(mktemp -d)
   '';
