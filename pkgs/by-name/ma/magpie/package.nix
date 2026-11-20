@@ -1,12 +1,11 @@
 {
   lib,
-  stdenv,
+  stdenvNoCC,
   makeDesktopItem,
   copyDesktopItems,
   imagemagick,
   autoPatchelfHook,
   wrapGAppsHook3,
-  makeBinaryWrapper,
   gtk3,
   webkitgtk_4_1,
   bun,
@@ -26,12 +25,12 @@ let
   # pairs. This package takes the linux builds only; the darwin and windows
   # builds are left out.
   goarch =
-    if stdenv.hostPlatform.isAarch64 then
+    if stdenvNoCC.hostPlatform.isAarch64 then
       "arm64"
-    else if stdenv.hostPlatform.isx86_64 then
+    else if stdenvNoCC.hostPlatform.isx86_64 then
       "amd64"
     else
-      throw "magpie has no release asset for ${stdenv.hostPlatform.system}";
+      throw "magpie has no release asset for ${stdenvNoCC.hostPlatform.system}";
   assetName = "magpie-linux-${goarch}";
 
   # The assets carry no license text, and redistributing an MIT binary
@@ -47,7 +46,7 @@ let
   };
 in
 
-stdenv.mkDerivation (finalAttrs: {
+stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "magpie";
   inherit version;
 
@@ -66,7 +65,6 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     autoPatchelfHook
     wrapGAppsHook3
-    makeBinaryWrapper
     copyDesktopItems
     imagemagick
   ];
@@ -115,7 +113,9 @@ stdenv.mkDerivation (finalAttrs: {
   nativeInstallCheckInputs = [ versionCheckHook ];
   versionCheckProgramArg = "--version";
   # `magpie --version` touches its config directory, so give the check a
-  # throwaway HOME.
+  # throwaway HOME and let versionCheckHook pass it through its clean
+  # environment.
+  versionCheckKeepEnvironment = "HOME";
   preInstallCheck = ''
     export HOME=$(mktemp -d)
   '';
